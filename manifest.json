@@ -1,0 +1,17 @@
+{
+  "name": "DPR Indore Metro",
+  "short_name": "DPR Metro",
+  "description": "Daily Progress Report - HCC-TPL Indore Metro JV",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#0a0e1a",
+  "theme_color": "#f59e0b",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect width='192' height='192' rx='24' fill='%230a0e1a'/><rect x='16' y='16' width='160' height='6' rx='3' fill='%23f59e0b'/><text x='96' y='110' font-family='Arial' font-size='52' font-weight='bold' fill='white' text-anchor='middle'>DPR</text><text x='96' y='150' font-family='Arial' font-size='22' fill='%23f59e0b' text-anchor='middle'>METRO</text></svg>",
+      "sizes": "192x192",
+      "type": "image/svg+xml"
+    }
+  ]
+}

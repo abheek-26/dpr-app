@@ -1,0 +1,1140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#0a0e1a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="DPR Metro">
+<link rel="manifest" href="manifest.json">
+<title>DPR App | Indore Metro</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Inter:wght@300;400;500;600&display=swap');
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+:root{--bg:#0a0e1a;--surface:#111827;--surface2:#1a2235;--border:#1e2d47;--accent:#f59e0b;--accent2:#3b82f6;--accent3:#10b981;--danger:#ef4444;--purple:#8b5cf6;--text:#e2e8f0;--muted:#64748b;--white:#f8fafc;}
+body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;min-height:100vh;overflow-x:hidden;}
+
+/* ===== SCREENS ===== */
+.screen{display:none;min-height:100vh;flex-direction:column;}
+.screen.active{display:flex;}
+
+/* ===== LOGIN SCREEN ===== */
+#screen-login{align-items:center;justify-content:center;padding:20px;background:linear-gradient(135deg,#0a0e1a 0%,#1a3a5c 50%,#0a0e1a 100%);}
+.login-card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:32px 28px;width:100%;max-width:380px;box-shadow:0 25px 60px rgba(0,0,0,.6);}
+.login-logo{text-align:center;margin-bottom:28px;}
+.login-logo .metro-badge{background:var(--accent);color:#000;font-family:'Rajdhani',sans-serif;font-weight:700;font-size:11px;letter-spacing:2px;padding:4px 12px;border-radius:4px;display:inline-block;margin-bottom:10px;}
+.login-logo h1{font-family:'Rajdhani',sans-serif;font-size:26px;font-weight:700;color:var(--white);}
+.login-logo h1 span{color:var(--accent);}
+.login-logo p{font-size:11px;color:var(--muted);margin-top:4px;}
+.role-tabs{display:flex;background:var(--surface2);border-radius:8px;padding:3px;margin-bottom:24px;}
+.role-tab{flex:1;padding:8px;text-align:center;border-radius:6px;cursor:pointer;font-family:'Rajdhani',sans-serif;font-weight:700;font-size:13px;letter-spacing:.5px;color:var(--muted);transition:all .2s;}
+.role-tab.active{background:var(--accent);color:#000;}
+.form-group{margin-bottom:16px;}
+.form-group label{display:block;font-family:'Rajdhani',sans-serif;font-weight:600;font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-bottom:6px;}
+.form-control{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--white);font-family:'Inter',sans-serif;font-size:16px;padding:12px 14px;outline:none;transition:border-color .2s;-webkit-appearance:none;}
+.form-control:focus{border-color:var(--accent);}
+select.form-control{cursor:pointer;}
+.pin-row{display:flex;gap:8px;}
+.pin-input{flex:1;background:var(--surface2);border:2px solid var(--border);border-radius:8px;color:var(--white);font-family:'Rajdhani',sans-serif;font-size:28px;font-weight:700;padding:10px;outline:none;text-align:center;transition:border-color .2s;-webkit-appearance:none;}
+.pin-input:focus{border-color:var(--accent);}
+.btn-login{width:100%;background:var(--accent);color:#000;border:none;border-radius:8px;padding:14px;font-family:'Rajdhani',sans-serif;font-weight:700;font-size:16px;letter-spacing:1px;cursor:pointer;margin-top:8px;transition:background .15s;}
+.btn-login:hover{background:#d97706;}
+.login-error{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);border-radius:6px;padding:8px 12px;font-size:12px;color:var(--danger);text-align:center;margin-top:10px;display:none;}
+.login-error.show{display:block;}
+
+/* ===== COMMON HEADER ===== */
+.app-header{background:linear-gradient(135deg,#0d1b2a,#1a3a5c,#0d1b2a);border-bottom:2px solid var(--accent);padding:10px 16px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;}
+.app-header .h-left{display:flex;align-items:center;gap:10px;}
+.app-header .metro-badge{background:var(--accent);color:#000;font-family:'Rajdhani',sans-serif;font-weight:700;font-size:9px;letter-spacing:1.5px;padding:2px 6px;border-radius:3px;}
+.app-header h1{font-family:'Rajdhani',sans-serif;font-size:16px;font-weight:700;color:var(--white);}
+.app-header h1 span{color:var(--accent);}
+.app-header .h-right{display:flex;align-items:center;gap:8px;}
+.user-badge{background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:4px 10px;font-family:'Rajdhani',sans-serif;font-size:12px;font-weight:700;color:var(--accent);}
+.logout-btn{background:transparent;border:1px solid var(--border);border-radius:6px;color:var(--muted);padding:4px 10px;font-size:11px;cursor:pointer;}
+.logout-btn:hover{border-color:var(--danger);color:var(--danger);}
+
+/* ===== LOCK BANNER ===== */
+.lock-banner{background:rgba(239,68,68,.1);border-bottom:2px solid var(--danger);padding:8px 16px;text-align:center;font-family:'Rajdhani',sans-serif;font-weight:700;font-size:13px;color:var(--danger);letter-spacing:.5px;display:none;}
+.lock-banner.show{display:block;}
+
+/* ===== DATE + AMOUNT BAR ===== */
+.info-bar{background:var(--surface);border-bottom:1px solid var(--border);padding:8px 16px;display:flex;gap:12px;align-items:center;flex-wrap:wrap;}
+.date-chip{background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:4px 10px;font-family:'Rajdhani',sans-serif;font-size:11px;font-weight:700;color:var(--muted);}
+.date-chip span{color:var(--accent);margin-left:4px;}
+.amt-display{background:var(--surface2);border:1px solid rgba(16,185,129,.3);border-radius:6px;padding:4px 12px;font-family:'Rajdhani',sans-serif;font-size:13px;font-weight:700;color:var(--accent3);margin-left:auto;}
+
+/* ===== ENGINEER SCREEN ===== */
+#screen-engineer{flex-direction:column;}
+.eng-tabs{display:flex;border-bottom:2px solid var(--border);background:var(--surface);position:sticky;top:61px;z-index:90;}
+.eng-tab{flex:1;padding:11px 4px;font-family:'Rajdhani',sans-serif;font-weight:700;font-size:12px;letter-spacing:.3px;text-align:center;cursor:pointer;border:none;background:transparent;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-2px;transition:all .2s;}
+.eng-tab.active{color:var(--accent);border-bottom-color:var(--accent);}
+.eng-panel{display:none;flex:1;overflow-y:auto;}
+.eng-panel.active{display:block;}
+.eng-container{max-width:700px;margin:0 auto;padding:14px 14px 80px;}
+
+/* Station Cards */
+.station-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;margin-bottom:10px;overflow:hidden;}
+.station-card.has-entries{border-color:var(--accent3);}
+.station-header{display:flex;align-items:center;padding:12px 16px;cursor:pointer;gap:10px;}
+.station-header:active{background:var(--surface2);}
+.st-badge{width:32px;height:32px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-family:'Rajdhani',sans-serif;font-weight:700;font-size:9px;flex-shrink:0;}
+.badge-ST{background:linear-gradient(135deg,#1e40af,#3b82f6);color:#fff;}
+.badge-CNC{background:linear-gradient(135deg,#7c3aed,#a78bfa);color:#fff;}
+.badge-UGR{background:linear-gradient(135deg,#065f46,#10b981);color:#fff;}
+.st-info{flex:1;}
+.st-name{font-family:'Rajdhani',sans-serif;font-size:15px;font-weight:700;color:var(--white);}
+.st-sub{font-size:10px;color:var(--muted);}
+.st-count{background:var(--accent3);color:#000;border-radius:10px;padding:2px 8px;font-size:11px;font-weight:700;display:none;}
+.st-count.vis{display:inline-block;}
+.st-arrow{color:var(--muted);font-size:18px;transition:transform .2s;}
+.st-arrow.open{transform:rotate(90deg);}
+.station-body{display:none;border-top:1px solid var(--border);}
+.station-body.open{display:block;}
+
+/* WBS + Activities */
+.wbs-group{border-bottom:1px solid var(--border);background:#0d1525;}
+.wbs-group:last-child{border-bottom:none;}
+.wbs-header{display:flex;align-items:center;padding:8px 16px 8px 46px;cursor:pointer;gap:8px;}
+.wbs-dot{width:6px;height:6px;border-radius:50%;background:var(--accent2);flex-shrink:0;}
+.wbs-name{flex:1;font-family:'Rajdhani',sans-serif;font-size:12px;font-weight:600;color:var(--text);}
+.wbs-arr{color:var(--muted);font-size:14px;transition:transform .2s;}
+.wbs-arr.open{transform:rotate(90deg);}
+.act-list{display:none;}
+.act-list.open{display:block;}
+.act-row{display:flex;align-items:center;padding:7px 14px 7px 58px;gap:7px;border-top:1px solid rgba(30,45,71,.4);cursor:pointer;}
+.act-row:active{background:rgba(245,158,11,.04);}
+.act-row.filled{background:rgba(16,185,129,.04);}
+.boq-tag{font-family:'Rajdhani',sans-serif;font-size:10px;font-weight:700;color:var(--muted);background:var(--surface2);padding:2px 5px;border-radius:3px;min-width:36px;text-align:center;}
+.act-name{flex:1;font-size:11px;color:var(--text);}
+.act-uom{font-family:'Rajdhani',sans-serif;font-size:10px;color:var(--muted);background:var(--surface2);border:1px solid var(--border);padding:2px 6px;border-radius:3px;min-width:28px;text-align:center;}
+.act-qty{font-family:'Rajdhani',sans-serif;font-size:13px;font-weight:700;color:var(--accent3);min-width:55px;text-align:right;display:none;}
+.act-qty.vis{display:block;}
+.add-btn{background:var(--surface2);border:1px solid var(--border);color:var(--muted);width:26px;height:26px;border-radius:5px;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s;}
+.add-btn.filled{border-color:var(--accent3);color:var(--accent3);background:rgba(16,185,129,.1);}
+.add-btn.locked{opacity:.3;cursor:not-allowed;}
+
+/* Photo tab */
+.photo-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:10px;padding:14px;}
+.photo-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden;}
+.photo-card-head{background:var(--surface2);padding:9px 12px;display:flex;align-items:center;gap:8px;}
+.photo-card-head .psb{width:26px;height:26px;border-radius:5px;display:flex;align-items:center;justify-content:center;font-family:'Rajdhani',sans-serif;font-weight:700;font-size:9px;flex-shrink:0;}
+.photo-card-head .psn{font-family:'Rajdhani',sans-serif;font-weight:700;font-size:12px;color:var(--white);}
+.photo-card-body{padding:10px;}
+.upload-zone{border:2px dashed var(--border);border-radius:7px;padding:14px;text-align:center;cursor:pointer;position:relative;transition:border-color .2s;}
+.upload-zone:active{border-color:var(--accent2);}
+.upload-zone input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;}
+.upload-zone .uz-icon{font-size:22px;margin-bottom:3px;}
+.upload-zone .uz-text{font-size:11px;color:var(--muted);}
+.thumb-row{display:flex;flex-wrap:wrap;gap:5px;margin-top:7px;}
+.thumb{position:relative;width:60px;height:60px;border-radius:5px;overflow:hidden;border:1px solid var(--border);}
+.thumb img{width:100%;height:100%;object-fit:cover;}
+.thumb .t-del{position:absolute;top:1px;right:1px;background:rgba(0,0,0,.7);border:none;color:#fff;width:14px;height:14px;border-radius:2px;font-size:10px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+.thumb .t-dl{position:absolute;bottom:1px;right:1px;background:rgba(0,0,0,.7);border:none;color:var(--accent);width:14px;height:14px;border-radius:2px;font-size:9px;cursor:pointer;display:flex;align-items:center;justify-content:center;text-decoration:none;}
+.p-count{font-size:10px;color:var(--muted);margin-top:4px;}
+
+/* Summary tab */
+.summary-wrap{padding:14px;}
+.sum-entry{display:flex;align-items:flex-start;gap:8px;padding:8px 0;border-bottom:1px solid rgba(30,45,71,.5);}
+.sum-entry:last-child{border-bottom:none;}
+.s-st{font-family:'Rajdhani',sans-serif;font-weight:700;font-size:11px;color:var(--accent2);min-width:90px;}
+.s-desc{flex:1;font-size:11px;color:var(--text);}
+.s-remark{font-size:9px;color:var(--purple);margin-top:2px;}
+.s-qty{font-family:'Rajdhani',sans-serif;font-weight:700;font-size:12px;color:var(--accent3);min-width:55px;text-align:right;}
+.s-amt{font-size:9px;color:var(--muted);text-align:right;}
+.s-del{background:transparent;border:1px solid rgba(239,68,68,.3);color:var(--danger);width:20px;height:20px;border-radius:3px;font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+
+/* ===== MANAGER SCREEN ===== */
+#screen-manager{flex-direction:column;}
+.mgr-tabs{display:flex;border-bottom:2px solid var(--border);background:var(--surface);position:sticky;top:61px;z-index:90;}
+.mgr-tab{flex:1;padding:11px 4px;font-family:'Rajdhani',sans-serif;font-weight:700;font-size:12px;text-align:center;cursor:pointer;border:none;background:transparent;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-2px;transition:all .2s;}
+.mgr-tab.active{color:var(--accent);border-bottom-color:var(--accent);}
+.mgr-panel{display:none;flex:1;}
+.mgr-panel.active{display:block;}
+.mgr-container{max-width:900px;margin:0 auto;padding:16px 14px 60px;}
+
+/* Dashboard */
+.dash-header{margin-bottom:16px;}
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px;margin-bottom:20px;}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px 14px;}
+.stat-card .sv{font-family:'Rajdhani',sans-serif;font-size:28px;font-weight:700;color:var(--accent);line-height:1;}
+.stat-card .sl{font-size:10px;color:var(--muted);margin-top:2px;letter-spacing:.5px;text-transform:uppercase;}
+.stat-card.green .sv{color:var(--accent3);}
+.stat-card.blue .sv{color:var(--accent2);}
+
+.station-status-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px;}
+.ssc{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px 14px;display:flex;align-items:center;gap:10px;}
+.ssc.submitted{border-color:var(--accent3);background:rgba(16,185,129,.04);}
+.ssc.pending{border-color:var(--border);}
+.ssc .ssc-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
+.ssc.submitted .ssc-dot{background:var(--accent3);}
+.ssc.pending .ssc-dot{background:var(--muted);}
+.ssc .ssc-info{flex:1;}
+.ssc .ssc-name{font-family:'Rajdhani',sans-serif;font-size:13px;font-weight:700;color:var(--white);}
+.ssc .ssc-sub{font-size:10px;color:var(--muted);}
+.ssc .ssc-check{color:var(--accent3);font-size:18px;display:none;}
+.ssc.submitted .ssc-check{display:block;}
+
+/* All entries table */
+.entries-table{width:100%;border-collapse:collapse;font-size:12px;}
+.entries-table th{background:var(--surface2);color:var(--muted);font-family:'Rajdhani',sans-serif;font-weight:700;font-size:11px;letter-spacing:.5px;text-transform:uppercase;padding:8px 10px;text-align:left;border-bottom:1px solid var(--border);}
+.entries-table td{padding:7px 10px;border-bottom:1px solid rgba(30,45,71,.4);color:var(--text);}
+.entries-table tr:last-child td{border-bottom:none;}
+.entries-table tr:hover td{background:rgba(255,255,255,.02);}
+
+/* Download / export buttons */
+.export-btn{background:var(--accent);color:#000;border:none;border-radius:7px;padding:8px 18px;font-family:'Rajdhani',sans-serif;font-weight:700;font-size:13px;letter-spacing:.5px;cursor:pointer;transition:background .15s;}
+.export-btn:hover{background:#d97706;}
+.export-btn.blue{background:var(--accent2);}
+.export-btn.green{background:var(--accent3);}
+.export-btn.green:hover{background:#059669;}
+
+/* Lock control */
+.lock-control{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:16px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
+.lock-time-input{background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--accent);font-family:'Rajdhani',sans-serif;font-size:20px;font-weight:700;padding:6px 12px;outline:none;width:110px;}
+.lock-status{font-family:'Rajdhani',sans-serif;font-size:13px;font-weight:700;}
+.lock-status.locked{color:var(--danger);}
+.lock-status.open{color:var(--accent3);}
+
+/* Refresh indicator */
+.refresh-dot{width:8px;height:8px;border-radius:50%;background:var(--accent3);display:inline-block;animation:pulse 2s infinite;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.3;}}
+
+/* ===== MODAL ===== */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:1000;display:none;align-items:flex-end;justify-content:center;padding:0;}
+.modal-overlay.open{display:flex;}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:16px 16px 0 0;width:100%;max-width:500px;animation:slideUp .25s ease;max-height:92vh;overflow-y:auto;}
+@keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+.modal-header{background:linear-gradient(135deg,#1a3a5c,#1e2d47);padding:16px 20px 12px;border-bottom:1px solid var(--border);position:sticky;top:0;}
+.modal-tag{font-size:9px;letter-spacing:2px;color:var(--accent);font-weight:600;margin-bottom:3px;}
+.modal-title{font-family:'Rajdhani',sans-serif;font-size:16px;font-weight:700;color:var(--white);}
+.modal-body{padding:18px 20px;}
+.qty-wrap{display:flex;gap:8px;align-items:center;margin-bottom:8px;}
+.qty-inp{flex:1;background:var(--surface2);border:2px solid var(--border);border-radius:8px;color:var(--white);font-family:'Rajdhani',sans-serif;font-size:28px;font-weight:700;padding:10px;outline:none;text-align:center;-webkit-appearance:none;}
+.qty-inp:focus{border-color:var(--accent);}
+.uom-box{background:var(--surface2);border:2px solid var(--border);border-radius:8px;padding:10px 10px;font-family:'Rajdhani',sans-serif;font-size:14px;font-weight:700;color:var(--accent);min-width:50px;text-align:center;}
+.rate-row{background:rgba(16,185,129,.07);border:1px solid rgba(16,185,129,.2);border-radius:6px;padding:6px 12px;font-size:11px;color:var(--accent3);display:flex;justify-content:space-between;margin-bottom:12px;}
+.remarks-inp{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:'Inter',sans-serif;font-size:13px;padding:9px 12px;outline:none;resize:vertical;min-height:60px;transition:border-color .2s;}
+.remarks-inp:focus{border-color:var(--accent2);}
+.modal-footer{padding:0 20px 20px;display:flex;gap:8px;position:sticky;bottom:0;background:var(--surface);}
+.btn{flex:1;padding:12px;border-radius:8px;font-family:'Rajdhani',sans-serif;font-size:14px;font-weight:700;letter-spacing:1px;text-transform:uppercase;cursor:pointer;border:none;}
+.btn-cancel{background:var(--surface2);color:var(--muted);border:1px solid var(--border);}
+.btn-save{background:var(--accent);color:#000;}
+.btn-clear{background:rgba(239,68,68,.15);color:var(--danger);border:1px solid rgba(239,68,68,.3);flex:.5;}
+
+/* ===== SYNC STATUS ===== */
+.sync-bar{background:var(--surface2);border-bottom:1px solid var(--border);padding:4px 16px;font-size:11px;color:var(--muted);display:flex;align-items:center;gap:6px;}
+.sync-bar .sdot{width:6px;height:6px;border-radius:50%;background:var(--accent3);flex-shrink:0;}
+.sync-bar .sdot.syncing{background:var(--accent);animation:pulse 1s infinite;}
+.sync-bar .sdot.error{background:var(--danger);}
+
+/* ===== TOAST ===== */
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--accent3);color:#000;padding:9px 20px;border-radius:8px;font-family:'Rajdhani',sans-serif;font-weight:700;font-size:13px;z-index:2000;transition:transform .3s ease;pointer-events:none;white-space:nowrap;max-width:90vw;text-align:center;}
+.toast.show{transform:translateX(-50%) translateY(0);}
+.toast.error{background:var(--danger);color:#fff;}
+.toast.info{background:var(--accent2);color:#fff;}
+
+/* Loading */
+.loading-screen{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:16px;z-index:9999;}
+.loading-screen.hide{display:none;}
+.loader{width:40px;height:40px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin 1s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-screen p{font-family:'Rajdhani',sans-serif;font-size:16px;color:var(--muted);}
+
+@media(min-width:600px){
+  .modal-overlay{align-items:center;}
+  .modal{border-radius:16px;max-height:85vh;}
+}
+</style>
+</head>
+<body>
+
+<!-- LOADING -->
+<div class="loading-screen" id="loading">
+  <div class="loader"></div>
+  <p>Loading DPR System...</p>
+</div>
+
+<!-- ===== LOGIN SCREEN ===== -->
+<div class="screen" id="screen-login">
+  <div class="login-card">
+    <div class="login-logo">
+      <div class="metro-badge">MPMRCL</div>
+      <h1>DPR <span>Metro</span></h1>
+      <p>HCC-TPL JV · Underground Section · Indore</p>
+    </div>
+    <div class="role-tabs">
+      <div class="role-tab active" onclick="setRole('engineer')">👷 Site Engineer</div>
+      <div class="role-tab" onclick="setRole('manager')">📊 Planning Manager</div>
+    </div>
+    <div id="eng-login-form">
+      <div class="form-group">
+        <label>Select Your Name</label>
+        <select class="form-control" id="eng-select">
+          <option value="">-- Select Engineer --</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Enter Your 4-Digit PIN</label>
+        <div class="pin-row">
+          <input class="pin-input" type="number" maxlength="1" id="p1" min="0" max="9" oninput="pinNext(this,'p2')">
+          <input class="pin-input" type="number" maxlength="1" id="p2" min="0" max="9" oninput="pinNext(this,'p3')">
+          <input class="pin-input" type="number" maxlength="1" id="p3" min="0" max="9" oninput="pinNext(this,'p4')">
+          <input class="pin-input" type="number" maxlength="1" id="p4" min="0" max="9" oninput="pinNext(this,null)">
+        </div>
+      </div>
+    </div>
+    <div id="mgr-login-form" style="display:none;">
+      <div class="form-group">
+        <label>Manager PIN</label>
+        <div class="pin-row">
+          <input class="pin-input" type="number" maxlength="1" id="mp1" min="0" max="9" oninput="pinNext(this,'mp2')">
+          <input class="pin-input" type="number" maxlength="1" id="mp2" min="0" max="9" oninput="pinNext(this,'mp3')">
+          <input class="pin-input" type="number" maxlength="1" id="mp3" min="0" max="9" oninput="pinNext(this,'mp4')">
+          <input class="pin-input" type="number" maxlength="1" id="mp4" min="0" max="9" oninput="pinNext(this,null)">
+        </div>
+      </div>
+    </div>
+    <div class="login-error" id="login-error">Incorrect PIN. Please try again.</div>
+    <button class="btn-login" onclick="doLogin()">LOGIN →</button>
+    <div style="text-align:center;margin-top:14px;font-size:10px;color:var(--muted);">Trial: Engineer PIN = 1234 · Manager PIN = 9999</div>
+  </div>
+</div>
+
+<!-- ===== ENGINEER SCREEN ===== -->
+<div class="screen" id="screen-engineer">
+  <div class="app-header">
+    <div class="h-left">
+      <div class="metro-badge">DPR</div>
+      <h1>Site <span>Entry</span></h1>
+    </div>
+    <div class="h-right">
+      <div class="user-badge" id="eng-name-badge">--</div>
+      <button class="logout-btn" onclick="logout()">Exit</button>
+    </div>
+  </div>
+  <div class="sync-bar"><div class="sdot" id="sync-dot"></div><span id="sync-text">Connected to cloud</span></div>
+  <div class="lock-banner" id="eng-lock-banner">🔒 DPR ENTRY LOCKED — Submission closed for today. Contact Planning Manager.</div>
+  <div class="info-bar">
+    <div class="date-chip">DPR Date:<span id="eng-dpr-date">--</span></div>
+    <div class="date-chip">Reporting:<span id="eng-rep-date">--</span></div>
+    <div class="amt-display">₹ <span id="eng-total-amt">0</span></div>
+  </div>
+  <div class="eng-tabs">
+    <button class="eng-tab active" onclick="engTab('entries')">📊 DPR Entries</button>
+    <button class="eng-tab" onclick="engTab('photos')">📷 Photos</button>
+    <button class="eng-tab" onclick="engTab('summary')">📋 Summary</button>
+  </div>
+  <div class="eng-panel active" id="engp-entries">
+    <div class="eng-container" id="station-container"></div>
+  </div>
+  <div class="eng-panel" id="engp-photos">
+    <div class="photo-grid" id="photo-grid"></div>
+  </div>
+  <div class="eng-panel" id="engp-summary">
+    <div class="eng-container">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+        <div style="font-family:'Rajdhani',sans-serif;font-weight:700;font-size:15px;color:var(--accent);">TODAY'S ENTRIES</div>
+        <button class="export-btn" onclick="exportMyCSV()">⬇ Export CSV</button>
+      </div>
+      <div id="eng-summary-list"></div>
+      <div id="eng-summary-empty" style="text-align:center;color:var(--muted);font-size:13px;padding:30px 0;">No entries yet for today.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MANAGER SCREEN ===== -->
+<div class="screen" id="screen-manager">
+  <div class="app-header">
+    <div class="h-left">
+      <div class="metro-badge">MGR</div>
+      <h1>Planning <span>Dashboard</span></h1>
+    </div>
+    <div class="h-right">
+      <div class="user-badge">Manager</div>
+      <button class="logout-btn" onclick="logout()">Exit</button>
+    </div>
+  </div>
+  <div class="sync-bar"><div class="refresh-dot"></div><span style="margin-left:6px;font-size:11px;color:var(--muted);">Live — auto-refreshes every 30 seconds</span></div>
+  <div class="info-bar">
+    <div class="date-chip">DPR Date:<span id="mgr-dpr-date">--</span></div>
+    <div class="date-chip">Reporting:<span id="mgr-rep-date">--</span></div>
+    <div class="amt-display">Total: ₹ <span id="mgr-total-amt">0</span></div>
+  </div>
+  <div class="mgr-tabs">
+    <button class="mgr-tab active" onclick="mgrTab('dashboard')">📊 Dashboard</button>
+    <button class="mgr-tab" onclick="mgrTab('entries')">📋 All Entries</button>
+    <button class="mgr-tab" onclick="mgrTab('settings')">⚙️ Settings</button>
+  </div>
+  <div class="mgr-panel active" id="mgrp-dashboard">
+    <div class="mgr-container">
+      <div class="stat-grid" id="mgr-stats"></div>
+      <div style="font-family:'Rajdhani',sans-serif;font-weight:700;font-size:13px;letter-spacing:1px;color:var(--muted);text-transform:uppercase;margin-bottom:10px;">Station Submission Status</div>
+      <div class="station-status-grid" id="station-status-grid"></div>
+    </div>
+  </div>
+  <div class="mgr-panel" id="mgrp-entries">
+    <div class="mgr-container">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:8px;">
+        <div style="font-family:'Rajdhani',sans-serif;font-weight:700;font-size:15px;color:var(--accent);">ALL STATION ENTRIES</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button class="export-btn green" onclick="exportAllCSV()">⬇ Download CSV</button>
+        </div>
+      </div>
+      <div style="overflow-x:auto;">
+        <table class="entries-table" id="all-entries-table">
+          <thead><tr>
+            <th>Station</th><th>WBS Group</th><th>BOQ</th><th>Activity</th><th>UOM</th><th>Qty</th><th>Amount ₹</th><th>Remarks</th>
+          </tr></thead>
+          <tbody id="all-entries-body"></tbody>
+        </table>
+      </div>
+      <div id="mgr-entries-empty" style="text-align:center;color:var(--muted);font-size:13px;padding:30px 0;">No entries submitted yet today.</div>
+    </div>
+  </div>
+  <div class="mgr-panel" id="mgrp-settings">
+    <div class="mgr-container">
+      <div class="lock-control">
+        <div>
+          <div style="font-family:'Rajdhani',sans-serif;font-weight:700;font-size:13px;color:var(--white);margin-bottom:4px;">Daily Entry Lock Time</div>
+          <div style="font-size:11px;color:var(--muted);">Entries auto-lock at this time every day</div>
+        </div>
+        <input type="time" class="lock-time-input" id="lock-time-input" value="10:00">
+        <div class="lock-status" id="lock-status-text">--</div>
+        <button class="export-btn" onclick="saveLockTime()">Save</button>
+      </div>
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:14px;">
+        <div style="font-family:'Rajdhani',sans-serif;font-weight:700;font-size:13px;color:var(--white);margin-bottom:10px;">Manual Lock Control</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button class="export-btn" style="background:var(--danger);" onclick="manualLock(true)">🔒 Lock Now</button>
+          <button class="export-btn green" onclick="manualLock(false)">🔓 Unlock</button>
+        </div>
+      </div>
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px;">
+        <div style="font-family:'Rajdhani',sans-serif;font-weight:700;font-size:13px;color:var(--white);margin-bottom:10px;">Engineers Registered</div>
+        <div id="eng-list-display"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ENTRY MODAL -->
+<div class="modal-overlay" id="modal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-tag" id="m-tag">Progress Entry</div>
+      <div class="modal-title" id="m-title">--</div>
+    </div>
+    <div class="modal-body">
+      <div style="margin-bottom:12px;">
+        <label style="display:block;font-family:'Rajdhani',sans-serif;font-weight:600;font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-bottom:6px;">Quantity Today</label>
+        <div class="qty-wrap">
+          <input type="number" class="qty-inp" id="qty-inp" min="0" step="0.01" placeholder="0.00">
+          <div class="uom-box" id="m-uom">--</div>
+        </div>
+        <div class="rate-row"><span>Rate: <strong id="m-rate">₹0</strong></span><span>Est. Amount: <strong id="m-amt">₹0</strong></span></div>
+      </div>
+      <div>
+        <label style="display:block;font-family:'Rajdhani',sans-serif;font-weight:600;font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-bottom:6px;">📝 Issues / Remarks</label>
+        <textarea class="remarks-inp" id="remarks-inp" placeholder="Reason if target not achieved, any constraints..."></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-clear" id="btn-clear" onclick="clearEntry()">Clear</button>
+      <button class="btn btn-cancel" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-save" onclick="saveEntry()">Save ✓</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+
+<script>
+// =============================================
+// FIREBASE CONFIG — DPR-IN05R
+// =============================================
+const firebaseConfig = {
+  apiKey: "AIzaSyDGP6BbLOdQw4rhZGi0hLgw9KSmZbxpAtU",
+  authDomain: "dpr-in05r.firebaseapp.com",
+  projectId: "dpr-in05r",
+  storageBucket: "dpr-in05r.firebasestorage.app",
+  messagingSenderId: "700561891984",
+  appId: "1:700561891984:web:03d652937a1625387cee15"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
+// =============================================
+// ENGINEERS — TRIAL: Ketan.R assigned to all stations
+// =============================================
+const ENGINEERS = [
+  { id: 'ketan_r', name: 'Ketan.R', pin: '1234',
+    stations: [
+      'T/9014:DC-C-ST-AS','T/9014:DC-C-ST-BSFK','T/9014:DC-C-ST-RAM',
+      'T/9014:DC-C-ST-BGS','T/9014:DC-C-ST-CGS','T/9014:DC-C-ST-RAJW',
+      'T/9014:DC-C-ST-RLW','T/9014:DC-C-CNC-RLW','T/9014:DC-C-CNC-AS',
+      'T/9014:DC-C-UGR-RLW','T/9014:DC-C-UGR-AS'
+    ]
+  }
+];
+const MANAGER_PIN = '9999';
+const LOCK_HOUR = 10;
+const LOCK_MINUTE = 0;
+
+// =============================================
+// BOQ RATES
+// =============================================
+const BOQ_RATES = {"2110":0,"2120":8001000.0,"2130":2000000.0,"2140":257631000.0,"2150":0,"2160":60007000.0,"3730":4501000.0,"3740":750000.0,"3750":9751000.0,"3760":0,"3770":26248.0,"3780":46914.0,"3790":0,"3800":110000.0,"3810":0,"3820":9004.0,"3830":70000.0,"3840":1099.0,"3850":0,"3860":396.0,"3870":710.0,"3880":110000.0,"3890":1750.0,"3900":4200.0,"3910":490.0,"3920":0,"3930":9004.0,"3940":70000.0,"3950":0,"3960":9004.0,"3970":70000.0,"3980":1099.0,"3990":0,"4000":5148.0,"4010":0,"4020":9004.0,"4030":70000.0,"4040":0,"4050":0,"4060":13506.0,"4070":70000.0,"4080":13506.0,"4090":0,"4100":13506.0,"4110":70000.0,"4120":490.0,"4130":5148.0,"4140":0,"4150":13506.0,"4160":70000.0,"4170":490.0,"4180":5148.0,"4190":0,"4200":9004.0,"4210":70000.0,"4220":0,"4221":5148.0,"4230":9004.0,"4240":70000.0,"4250":1099.0,"4260":0,"4270":9004.0,"4280":70000.0,"4290":0,"4300":9004.0,"4310":70000.0,"4320":9004.0,"4330":70000.0,"4340":5148.0,"4350":0,"4360":5148.0,"4370":9004.0,"4380":70000.0,"4390":400.0,"4400":600.0,"4410":0,"4420":9004.0,"4430":70000.0,"4440":0,"4450":9004.0,"4460":70000.0,"4470":0,"4480":0,"4490":0,"4500":9004.0,"4510":70000.0,"4520":0,"4521":9004.0,"4530":70000.0,"4540":0,"4550":0,"4560":0,"4570":0,"4580":4501000.0,"4590":750000.0,"4600":9751000.0,"4610":0,"4620":0,"4630":26248.0,"4640":46914.0,"4650":9004.0,"4660":9004.0,"4670":70000.0,"4680":0,"4690":9004.0,"4700":70000.0,"4710":1099.0,"4720":0,"4730":396.0,"4740":710.0,"4750":4200.0,"4760":110000.0,"4770":1750.0,"4780":4200.0,"4790":490.0,"4800":0,"4810":9004.0,"4820":70000.0,"4830":0,"4840":9004.0,"4850":70000.0,"4860":0,"4870":5148.0,"4880":0,"4890":9004.0,"4900":70000.0,"4910":0,"4920":1099.0,"4930":0,"4940":9004.0,"4950":70000.0,"4960":0,"4970":9004.0,"4980":70000.0,"4990":0,"5000":9004.0,"5010":70000.0,"5020":490.0,"5030":5148.0,"5040":0,"5050":9004.0,"5060":70000.0,"5070":490.0,"5080":5148.0,"5090":0,"5100":9004.0,"5110":70000.0,"5120":0,"5130":5148.0,"5140":9004.0,"5150":70000.0,"5160":1099.0,"5170":0,"5180":9004.0,"5190":70000.0,"5200":0,"5210":5148.0,"5220":9004.0,"5230":70000.0,"5240":0,"5250":5148.0,"5260":9004.0,"5270":70000.0,"5280":400.0,"5290":600.0,"5300":0,"5310":9004.0,"5320":70000.0,"5330":0,"5340":9004.0,"5350":70000.0,"5360":0,"5370":0,"5380":9004.0,"5390":70000.0,"5400":9004.0,"5410":70000.0,"5420":0,"5430":9004.0,"5440":70000.0,"5450":0,"5460":9004.0,"5470":70000.0,"5480":0,"5490":0,"5500":9004.0,"5510":70000.0,"5520":9004.0,"5530":70000.0,"5540":0,"5550":0,"5560":4501000.0,"5570":750000.0,"5580":9751000.0,"5590":0,"5600":0,"5610":26248.0,"5620":46914.0,"5630":9004.0,"5640":9004.0,"5650":70000.0,"5660":0,"5670":9004.0,"5680":70000.0,"5690":1099.0,"5700":0,"5710":396.0,"5720":710.0,"5730":4200.0,"5740":110000.0,"5750":1750.0,"5760":4200.0,"5770":490.0,"5780":0,"5790":9004.0,"5800":70000.0,"5810":0,"5820":9004.0,"5830":70000.0,"5840":1099.0,"5850":0,"5860":5148.0,"5870":0,"5880":9004.0,"5890":70000.0,"5900":0,"5910":0,"5920":9004.0,"5930":70000.0,"5940":0,"5950":9004.0,"5960":70000.0,"5970":0,"5980":9004.0,"5990":70000.0,"6000":490.0,"6010":5148.0,"6020":0,"6030":9004.0,"6040":70000.0,"6050":490.0,"6060":5148.0,"6070":0,"6080":9004.0,"6090":70000.0,"6100":0,"6110":5148.0,"6120":9004.0,"6130":70000.0,"6140":1099.0,"6150":0,"6160":9004.0,"6170":70000.0,"6180":0,"6190":5148.0,"6200":9004.0,"6210":70000.0,"6220":0,"6230":9004.0,"6231":5148.0,"6240":70000.0,"6250":400.0,"6260":600.0,"6270":0,"6280":9004.0,"6290":70000.0,"6300":0,"6310":9004.0,"6320":70000.0,"6330":0,"6340":0,"6350":9004.0,"6360":70000.0,"6370":9004.0,"6380":70000.0,"6390":0,"6400":9004.0,"6410":70000.0,"6420":0,"6430":9004.0,"6440":70000.0,"6450":0,"6460":0,"6470":9004.0,"6480":70000.0,"6490":9004.0,"6500":70000.0,"6510":0,"6520":0,"6530":4501000.0,"6540":750000.0,"6550":9751000.0,"6560":0,"6570":0,"6580":26248.0,"6590":46914.0,"6600":9004.0,"6610":9004.0,"6620":70000.0,"6630":0,"6640":9004.0,"6650":70000.0,"6660":1099.0,"6670":0,"6680":396.0,"6690":710.0,"6700":4200.0,"6710":110000.0,"6720":1750.0,"6730":4200.0,"6740":490.0,"6750":0,"6760":9004.0,"6770":70000.0,"6780":0,"6790":9004.0,"6800":70000.0,"6810":1099.0,"6820":0,"6830":5148.0,"6840":0,"6850":9004.0,"6860":70000.0,"6870":0,"6880":0,"6890":9004.0,"6900":70000.0,"6910":0,"6920":9004.0,"6930":70000.0,"6940":0,"6950":9004.0,"6960":70000.0,"6970":490.0,"6980":5148.0,"6990":0,"7000":9004.0,"7010":70000.0,"7020":490.0,"7030":5148.0,"7040":0,"7050":9004.0,"7060":70000.0,"7070":0,"7080":5148.0,"7090":9004.0,"7100":70000.0,"7110":1099.0,"7120":0,"7130":9004.0,"7140":70000.0,"7150":0,"7160":5148.0,"7170":9004.0,"7180":70000.0,"7190":0,"7200":9004.0,"7210":70000.0,"7220":400.0,"7230":600.0,"7240":0,"7250":9004.0,"7260":70000.0,"7270":0,"7280":9004.0,"7290":70000.0,"7300":0,"7310":0,"7320":9004.0,"7330":70000.0,"7340":9004.0,"7350":70000.0,"7360":0,"7370":9004.0,"7380":70000.0,"7390":0,"7400":9004.0,"7410":70000.0,"7420":0,"7430":0,"7440":9004.0,"7450":70000.0,"7460":9004.0,"7470":70000.0,"7480":0,"7490":0,"7500":4501000.0,"7510":750000.0,"7520":9751000.0,"7530":0,"7540":0,"7550":26248.0,"7560":46914.0,"7570":9004.0,"7580":9004.0,"7590":70000.0,"7600":0,"7610":9004.0,"7620":70000.0,"7630":1099.0,"7640":0,"7650":396.0,"7660":710.0,"7670":4200.0,"7680":110000.0,"7690":1750.0,"7700":4200.0,"7710":490.0,"7720":0,"7730":9004.0,"7740":70000.0,"7750":0,"7760":9004.0,"7770":70000.0,"7780":1099.0,"7790":0,"7800":5148.0,"7810":0,"7820":9004.0,"7830":70000.0,"7840":0,"7850":0,"7860":9004.0,"7870":70000.0,"7880":0,"7890":9004.0,"7900":70000.0,"7910":0,"7920":9004.0,"7930":70000.0,"7940":490.0,"7950":5148.0,"7960":0,"7970":9004.0,"7980":70000.0,"7990":490.0,"8000":5148.0,"8010":0,"8020":9004.0,"8030":70000.0,"8040":0,"8050":5148.0,"8060":9004.0,"8070":70000.0,"8080":1099.0,"8090":0,"8100":9004.0,"8110":70000.0,"8120":0,"8130":5148.0,"8140":9004.0,"8150":70000.0,"8160":0,"8170":9004.0,"8180":70000.0,"8190":400.0,"8200":600.0,"8210":0,"8220":9004.0,"8230":70000.0,"8240":0,"8250":9004.0,"8260":70000.0,"8270":0,"8280":0,"8290":9004.0,"8300":70000.0,"8310":9004.0,"8320":70000.0,"8330":0,"8340":9004.0,"8350":70000.0,"8360":0,"8370":9004.0,"8380":70000.0,"8390":0,"8400":0,"8410":9004.0,"8420":70000.0,"8430":9004.0,"8440":70000.0,"8450":0,"8460":0,"8470":4501000.0,"8480":750000.0,"8490":9751000.0,"8500":0,"8510":0,"8520":26248.0,"8530":46914.0,"8540":9004.0,"8550":9004.0,"8560":70000.0,"8570":0,"8580":9004.0,"8590":70000.0,"8600":1099.0,"8610":0,"8620":396.0,"8630":710.0,"8640":4200.0,"8650":110000.0,"8660":1750.0,"8670":4200.0,"8680":490.0,"8690":0,"8700":9004.0,"8710":70000.0,"8720":0,"8730":9004.0,"8740":70000.0,"8750":1099.0,"8760":0,"8770":5148.0,"8780":0,"8790":9004.0,"8800":70000.0,"8810":0,"8820":0,"8830":9004.0,"8840":70000.0,"8850":0,"8860":9004.0,"8870":70000.0,"8880":0,"8890":9004.0,"8900":70000.0,"8910":490.0,"8920":5148.0,"8930":0,"8940":9004.0,"8950":70000.0,"8960":490.0,"8970":5148.0,"8980":0,"8990":9004.0,"9000":70000.0,"9010":0,"9020":5148.0,"9030":9004.0,"9040":70000.0,"9050":1099.0,"9060":0,"9070":9004.0,"9080":70000.0,"9090":0,"9100":5148.0,"9110":9004.0,"9120":70000.0,"9130":0,"9140":5148.0,"9150":9004.0,"9160":70000.0,"9170":400.0,"9180":600.0,"9190":0,"9200":9004.0,"9210":70000.0,"9220":0,"9230":9004.0,"9240":70000.0,"9250":0,"9260":0,"9270":9004.0,"9280":70000.0,"9290":9004.0,"9300":70000.0,"9310":0,"9320":9004.0,"9330":70000.0,"9340":0,"9350":9004.0,"9360":70000.0,"9370":0,"9380":0,"9390":9004.0,"9400":70000.0,"9410":9004.0,"9420":70000.0,"9430":0,"9440":0,"9450":4501000.0,"9460":750000.0,"9470":9751000.0,"9480":0,"9490":0,"9500":26248.0,"9510":46914.0,"9520":9004.0,"9530":9004.0,"9540":70000.0,"9550":0,"9560":9004.0,"9570":70000.0,"9580":1099.0,"9590":0,"9600":396.0,"9610":710.0,"9620":4200.0,"9630":110000.0,"9640":1750.0,"9650":4200.0,"9660":490.0,"9670":0,"9680":9004.0,"9690":70000.0,"9700":0,"9710":9004.0,"9720":70000.0,"9730":1099.0,"9740":0,"9750":5148.0,"9760":0,"9770":9004.0,"9780":70000.0,"9790":0,"9800":0,"9810":9004.0,"9820":70000.0,"9830":0,"9840":9004.0,"9850":70000.0,"9860":0,"9870":9004.0,"9880":70000.0,"9890":490.0,"9900":5148.0,"9910":0,"9920":9004.0,"9930":70000.0,"9940":490.0,"9950":5148.0,"9960":0,"9970":9004.0,"9980":70000.0,"1631":0,"1632":5148.0,"1633":9004.0,"1634":70000.0,"1635":1099.0,"1636":0,"1637":9004.0,"1638":70000.0,"1641":0,"1642":5148.0,"1643":9004.0,"1644":70000.0,"1651":0,"1652":9004.0,"1653":70000.0,"1661":400.0,"1662":600.0,"1671":0,"1672":9004.0,"1673":70000.0,"1674":0,"1675":9004.0,"1676":70000.0,"1677":0,"1678":0,"1679":9004.0,"1681":70000.0,"1682":9004.0,"1683":70000.0,"1684":0,"1685":9004.0,"1686":70000.0,"1687":0,"1688":9004.0,"1689":70000.0,"1691":0,"1692":0,"1693":9004.0,"1694":70000.0,"1695":9004.0,"1696":70000.0,"1697":0,"1698":0,"1701":0,"1702":0,"1703":26248.0,"1704":46914.0,"1705":9004.0,"1706":9004.0,"1707":70000.0,"1708":0,"1709":396.0,"1711":710.0,"1712":4200.0,"1713":110000.0,"1714":1750.0,"1715":4200.0,"1716":0,"1717":9004.0,"1718":70000.0,"1719":400.0,"1721":0,"1722":9004.0,"1723":70000.0,"1724":400.0,"1725":0,"1726":9004.0,"1727":70000.0,"1731":0,"1732":9004.0,"1733":70000.0,"1741":400.0,"1742":600.0,"1751":0,"1752":0,"1761":0,"1771":0,"1772":0,"1773":26248.0,"1774":46914.0,"1775":110000.0,"1781":0,"1782":396.0,"1783":710.0,"1784":4200.0,"1785":110000.0,"1786":1750.0,"1787":4200.0,"1791":0,"1792":9004.0,"1793":70000.0,"1794":400.0,"1801":0,"1802":9004.0,"1803":70000.0,"1804":400.0,"1805":0,"1806":9004.0,"1807":70000.0,"1811":0,"1812":9004.0,"1813":70000.0,"1814":400.0,"1821":600.0,"1822":0,"1831":0,"1841":0,"1851":0,"1852":0,"1853":9004.0,"1854":9004.0,"1855":70000.0,"1861":0,"1862":396.0,"1863":710.0,"1864":4200.0,"1865":110000.0,"1866":1750.0,"1867":4200.0,"1871":0,"1872":9004.0,"1873":70000.0,"1874":400.0,"1881":0,"1882":9004.0,"1883":70000.0,"1891":400.0,"1892":600.0,"1901":0,"1902":0,"1903":110000.0,"1911":0,"1912":396.0,"1913":710.0,"1914":4200.0,"1915":110000.0,"1916":1750.0,"1917":4200.0,"1921":0,"1922":9004.0,"1923":70000.0,"1924":400.0,"1931":0,"1932":9004.0,"1933":70000.0,"1934":400.0,"1935":600.0};
+
+// =============================================
+// WBS DATA (compact — key stations)
+// =============================================
+const STATION_NAMES = {
+  'T/9014:DC-C-ST-AS':'Airport Station','T/9014:DC-C-ST-BSFK':'BSF Kalani Nagar',
+  'T/9014:DC-C-ST-RAM':'Ramchandra Nagar','T/9014:DC-C-ST-BGS':'Bada Ganapati',
+  'T/9014:DC-C-ST-CGS':'Chota Ganapati','T/9014:DC-C-ST-RAJW':'Rajwada',
+  'T/9014:DC-C-ST-RLW':'Indore Railway Station','T/9014:DC-C-CNC-RLW':'Cut & Cover - Railway',
+  'T/9014:DC-C-CNC-AS':'Cut & Cover - Airport','T/9014:DC-C-UGR-RLW':'UG Ramp - Railway',
+  'T/9014:DC-C-UGR-AS':'UG Ramp - Airport'
+};
+
+// Minimal WBS per station for trial (Airport Station full, others abbreviated)
+const WBS_DATA = {
+  'T/9014:DC-C-ST-AS':{name:'Airport Station',groups:{'Utility Diversion':{activities:[{boq:'3730',desc:'Identification of Utilities',uom:'LS'},{boq:'3740',desc:'Taking Approval for Utilities',uom:'LS'},{boq:'3750',desc:'Diversion of Utilities',uom:'LS'}]},'Temporary Soil Support':{activities:[{boq:'3770',desc:'Boring in Soil',uom:'M'},{boq:'3780',desc:'Boring in Rock',uom:'M'},{boq:'3800',desc:'Total Weight of soldier piles',uom:'TO'}]},'Walls':{activities:[{boq:'3820',desc:'Concrete',uom:'M3'},{boq:'3830',desc:'Reinforcement',uom:'TO'},{boq:'3840',desc:'Water Stopper',uom:'M'}]},'Excavation':{activities:[{boq:'3860',desc:'Exc in Soil',uom:'M3'},{boq:'3870',desc:'Exc in Rock',uom:'M3'},{boq:'3880',desc:'Strut and Waler',uom:'TO'},{boq:'3890',desc:'Shotcrete & Wire Mesh',uom:'M2'},{boq:'3900',desc:'Rock Bolts',uom:'NO'}]},'Base Slab':{activities:[{boq:'3930',desc:'Concrete',uom:'M3'},{boq:'3940',desc:'Reinforcement',uom:'TO'},{boq:'4000',desc:'PCC',uom:'M3'}]},'Platform Slab':{activities:[{boq:'4060',desc:'Concrete',uom:'M3'},{boq:'4070',desc:'Reinforcement',uom:'TO'},{boq:'4100',desc:'Concrete (Platform)',uom:'M3'},{boq:'4110',desc:'Reinforcement (Platform)',uom:'TO'}]},'Concourse Slab':{activities:[{boq:'4150',desc:'Concrete',uom:'M3'},{boq:'4160',desc:'Reinforcement',uom:'TO'}]},'Roof Slab':{activities:[{boq:'4230',desc:'Concrete',uom:'M3'},{boq:'4240',desc:'Reinforcement',uom:'TO'},{boq:'4250',desc:'Water Stopper',uom:'M'}]},'Entry/Exit':{activities:[{boq:'4300',desc:'Wall-Concrete',uom:'M3'},{boq:'4310',desc:'Wall-Reinforcement',uom:'TO'},{boq:'4320',desc:'Slab-Concrete',uom:'M3'},{boq:'4330',desc:'Slab-Reinforcement',uom:'TO'}]},'Water Proofing':{activities:[{boq:'4390',desc:'Water Proofing',uom:'M2'},{boq:'4400',desc:'Backfilling of area',uom:'M3'}]}}},
+  'T/9014:DC-C-ST-BSFK':{name:'BSF Kalani Nagar',groups:{'Excavation':{activities:[{boq:'4730',desc:'Exc in Soil',uom:'M3'},{boq:'4740',desc:'Exc in Rock',uom:'M3'},{boq:'4760',desc:'Strut and Waler',uom:'TO'},{boq:'4770',desc:'Shotcrete & Wire Mesh',uom:'M2'}]},'Base Slab':{activities:[{boq:'4810',desc:'Concrete',uom:'M3'},{boq:'4820',desc:'Reinforcement',uom:'TO'}]},'Platform Slab':{activities:[{boq:'4940',desc:'Concrete',uom:'M3'},{boq:'4950',desc:'Reinforcement',uom:'TO'}]},'Roof Slab':{activities:[{boq:'5140',desc:'Concrete',uom:'M3'},{boq:'5150',desc:'Reinforcement',uom:'TO'}]},'Water Proofing':{activities:[{boq:'5280',desc:'Water Proofing',uom:'M2'},{boq:'5290',desc:'Backfilling of area',uom:'M3'}]}}},
+  'T/9014:DC-C-ST-RAM':{name:'Ramchandra Nagar',groups:{'Excavation':{activities:[{boq:'5710',desc:'Exc in Soil',uom:'M3'},{boq:'5720',desc:'Exc in Rock',uom:'M3'},{boq:'5740',desc:'Strut and Waler',uom:'TO'},{boq:'5750',desc:'Shotcrete & Wire Mesh',uom:'M2'}]},'Base Slab':{activities:[{boq:'5790',desc:'RCC',uom:'M3'},{boq:'5800',desc:'Reinforcement',uom:'TO'}]},'Roof Slab':{activities:[{boq:'6120',desc:'RCC',uom:'M3'},{boq:'6130',desc:'Reinforcement',uom:'TO'}]},'Water Proofing':{activities:[{boq:'6250',desc:'Water Proofing',uom:'M2'},{boq:'6260',desc:'Backfilling',uom:'M3'}]}}},
+  'T/9014:DC-C-ST-BGS':{name:'Bada Ganapati',groups:{'Excavation':{activities:[{boq:'6680',desc:'Exc in Soil',uom:'M3'},{boq:'6690',desc:'Exc in Rock',uom:'M3'},{boq:'6710',desc:'Strut and Waler',uom:'TO'}]},'Base Slab':{activities:[{boq:'6760',desc:'RCC',uom:'M3'},{boq:'6770',desc:'Reinforcement',uom:'TO'}]},'Roof Slab':{activities:[{boq:'7090',desc:'RCC',uom:'M3'},{boq:'7100',desc:'Reinforcement',uom:'TO'}]}}},
+  'T/9014:DC-C-ST-CGS':{name:'Chota Ganapati',groups:{'Excavation':{activities:[{boq:'7650',desc:'Exc in Soil',uom:'M3'},{boq:'7660',desc:'Exc in Rock',uom:'M3'},{boq:'7680',desc:'Strut & Waler',uom:'TO'}]},'Base Slab':{activities:[{boq:'7730',desc:'RCC',uom:'M3'},{boq:'7740',desc:'Reinforcement',uom:'TO'}]},'Roof Slab':{activities:[{boq:'8060',desc:'RCC',uom:'M3'},{boq:'8070',desc:'Reinforcement',uom:'TO'}]}}},
+  'T/9014:DC-C-ST-RAJW':{name:'Rajwada',groups:{'Excavation':{activities:[{boq:'8620',desc:'Exc in Soil',uom:'M3'},{boq:'8630',desc:'Exc in Rock',uom:'M3'},{boq:'8650',desc:'Strut & Waler',uom:'TO'}]},'Base Slab':{activities:[{boq:'8700',desc:'RCC',uom:'M3'},{boq:'8710',desc:'Reinforcement',uom:'TO'}]},'Roof Slab':{activities:[{boq:'9030',desc:'RCC',uom:'M3'},{boq:'9040',desc:'Reinforcement',uom:'TO'}]}}},
+  'T/9014:DC-C-ST-RLW':{name:'Indore Railway Station',groups:{'Excavation':{activities:[{boq:'9600',desc:'Exc in Soil',uom:'M3'},{boq:'9610',desc:'Exc in Rock',uom:'M3'},{boq:'9630',desc:'Strut & Waler',uom:'TO'}]},'Base Slab':{activities:[{boq:'9680',desc:'RCC',uom:'M3'},{boq:'9690',desc:'Reinforcement',uom:'TO'}]},'Roof Slab':{activities:[{boq:'1633',desc:'RCC',uom:'M3'},{boq:'1634',desc:'Reinforcement',uom:'TO'}]}}},
+  'T/9014:DC-C-CNC-RLW':{name:'Cut & Cover - Railway',groups:{'Excavation':{activities:[{boq:'1709',desc:'Exc in Soil',uom:'M3'},{boq:'1711',desc:'Exc in Rock',uom:'M3'},{boq:'1713',desc:'Strut & Waler',uom:'TO'}]},'Base Slab':{activities:[{boq:'1717',desc:'RCC',uom:'M3'},{boq:'1718',desc:'Reinforcement',uom:'TO'}]},'Roof':{activities:[{boq:'1732',desc:'RCC',uom:'M3'},{boq:'1733',desc:'Reinforcement',uom:'TO'}]}}},
+  'T/9014:DC-C-CNC-AS':{name:'Cut & Cover - Airport',groups:{'Excavation':{activities:[{boq:'1782',desc:'Exc in Soil',uom:'M3'},{boq:'1783',desc:'Exc in Rock',uom:'M3'},{boq:'1785',desc:'Strut & Waler',uom:'TO'}]},'Base Slab':{activities:[{boq:'1792',desc:'RCC',uom:'M3'},{boq:'1793',desc:'Reinforcement',uom:'TO'}]},'Roof':{activities:[{boq:'1812',desc:'RCC',uom:'M3'},{boq:'1813',desc:'Reinforcement',uom:'TO'}]}}},
+  'T/9014:DC-C-UGR-RLW':{name:'UG Ramp - Railway',groups:{'Excavation':{activities:[{boq:'1862',desc:'Exc in Soil',uom:'M3'},{boq:'1863',desc:'Exc in Rock',uom:'M3'},{boq:'1865',desc:'Strut & Waler',uom:'TO'}]},'Base Slab':{activities:[{boq:'1872',desc:'RCC',uom:'M3'},{boq:'1873',desc:'Reinforcement',uom:'TO'}]},'Walls':{activities:[{boq:'1882',desc:'RCC',uom:'M3'},{boq:'1883',desc:'Reinforcement',uom:'TO'}]}}},
+  'T/9014:DC-C-UGR-AS':{name:'UG Ramp - Airport',groups:{'Excavation':{activities:[{boq:'1912',desc:'Exc in Soil',uom:'M3'},{boq:'1913',desc:'Exc in Rock',uom:'M3'},{boq:'1915',desc:'Strut & Waler',uom:'TO'}]},'Base Slab':{activities:[{boq:'1922',desc:'RCC',uom:'M3'},{boq:'1923',desc:'Reinforcement',uom:'TO'}]},'Walls':{activities:[{boq:'1932',desc:'RCC',uom:'M3'},{boq:'1933',desc:'Reinforcement',uom:'TO'}]}}}
+};
+
+// =============================================
+// STATE
+// =============================================
+let currentRole = 'engineer';
+let currentEngineer = null;
+let isLocked = false;
+let lockTime = {h:10, m:0};
+let TODAY = '', YESTERDAY = '', DPR_DATE = '';
+let localEntries = {};   // boq -> entry (engineer's own, for today)
+let localPhotos = {};    // stKey -> [{dataUrl,filename}]
+let allEntries = {};     // boq -> entry (all engineers, from Firestore)
+let currentModal = null;
+let firestoreUnsubscribe = null;
+
+function getDateStr(d){ return d.toISOString().split('T')[0]; }
+function formatDate(d){ if(!d)return'--'; const [y,m,day]=d.split('-'); const mo=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']; return `${day} ${mo[parseInt(m)-1]} ${y}`; }
+function fmtAmt(v){ return Math.round(v||0).toLocaleString('en-IN'); }
+
+// =============================================
+// INIT
+// =============================================
+window.addEventListener('load', async () => {
+  const today = new Date();
+  const yesterday = new Date(today); yesterday.setDate(today.getDate()-1);
+  TODAY = getDateStr(today);
+  YESTERDAY = getDateStr(yesterday);
+  DPR_DATE = YESTERDAY;
+
+  // Populate engineer dropdown
+  const sel = document.getElementById('eng-select');
+  ENGINEERS.forEach(e => {
+    const opt = document.createElement('option');
+    opt.value = e.id; opt.textContent = e.name; sel.appendChild(opt);
+  });
+
+  // Date displays
+  ['eng','mgr'].forEach(p => {
+    const dd = document.getElementById(p+'-dpr-date');
+    const rd = document.getElementById(p+'-rep-date');
+    if(dd) dd.textContent = ' '+formatDate(DPR_DATE);
+    if(rd) rd.textContent = ' '+formatDate(TODAY);
+  });
+
+  checkLock();
+  setInterval(checkLock, 60000);
+
+  document.getElementById('loading').classList.add('hide');
+  showScreen('login');
+});
+
+// =============================================
+// LOCK LOGIC
+// =============================================
+function checkLock(){
+  const now = new Date();
+  const h = now.getHours(), m = now.getMinutes();
+  isLocked = (h > lockTime.h) || (h === lockTime.h && m >= lockTime.m);
+  const banner = document.getElementById('eng-lock-banner');
+  if(banner) banner.classList.toggle('show', isLocked);
+  const ls = document.getElementById('lock-status-text');
+  if(ls){ ls.textContent = isLocked ? '🔒 LOCKED' : '🔓 OPEN'; ls.className='lock-status '+(isLocked?'locked':'open'); }
+  document.getElementById('lock-time-input').value = `${String(lockTime.h).padStart(2,'0')}:${String(lockTime.m).padStart(2,'0')}`;
+}
+
+function saveLockTime(){
+  const val = document.getElementById('lock-time-input').value;
+  const [h,m] = val.split(':').map(Number);
+  lockTime = {h,m};
+  checkLock();
+  // Save to Firestore
+  db.collection('settings').doc('lock').set({hour:h,minute:m,date:TODAY}).catch(()=>{});
+  showToast('Lock time saved: '+val);
+}
+
+function manualLock(lock){
+  isLocked = lock;
+  const banner = document.getElementById('eng-lock-banner');
+  if(banner) banner.classList.toggle('show', isLocked);
+  db.collection('settings').doc('manual_lock').set({locked:lock,date:TODAY}).catch(()=>{});
+  showToast(lock ? '🔒 Entries locked' : '🔓 Entries unlocked');
+  checkLock();
+}
+
+// =============================================
+// ROLE & LOGIN
+// =============================================
+function setRole(role){
+  currentRole = role;
+  document.querySelectorAll('.role-tab').forEach((t,i)=>t.classList.toggle('active',(i===0&&role==='engineer')||(i===1&&role==='manager')));
+  document.getElementById('eng-login-form').style.display = role==='engineer'?'':'none';
+  document.getElementById('mgr-login-form').style.display = role==='manager'?'':'none';
+  document.getElementById('login-error').classList.remove('show');
+}
+
+function pinNext(el, nextId){
+  const v = el.value.toString();
+  if(v.length >= 1){ el.value = v.charAt(0); if(nextId) document.getElementById(nextId).focus(); }
+}
+
+function getPin(prefix){
+  return ['p1','p2','p3','p4'].map(id=>{ const el=document.getElementById(prefix?prefix+id.slice(1):id); return el?el.value:''; }).join('');
+}
+
+function doLogin(){
+  const err = document.getElementById('login-error');
+  err.classList.remove('show');
+  if(currentRole === 'manager'){
+    const pin = getPin('mp');
+    if(pin === MANAGER_PIN){ showManagerScreen(); }
+    else { err.classList.add('show'); }
+  } else {
+    const engId = document.getElementById('eng-select').value;
+    const pin = getPin(null);
+    if(!engId){ err.textContent='Please select your name.'; err.classList.add('show'); return; }
+    const eng = ENGINEERS.find(e=>e.id===engId);
+    if(!eng || pin !== eng.pin){ err.textContent='Incorrect PIN. Try again.'; err.classList.add('show'); return; }
+    currentEngineer = eng;
+    showEngineerScreen();
+  }
+}
+
+function logout(){
+  if(firestoreUnsubscribe){ firestoreUnsubscribe(); firestoreUnsubscribe=null; }
+  currentEngineer=null; localEntries={}; localPhotos={}; allEntries={};
+  ['p1','p2','p3','p4','mp1','mp2','mp3','mp4'].forEach(id=>{ const el=document.getElementById(id); if(el)el.value=''; });
+  document.getElementById('eng-select').value='';
+  showScreen('login');
+}
+
+// =============================================
+// SCREENS
+// =============================================
+function showScreen(name){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById('screen-'+name).classList.add('active');
+}
+
+function showEngineerScreen(){
+  document.getElementById('eng-name-badge').textContent = currentEngineer.name;
+  showScreen('engineer');
+  buildStationCards();
+  buildPhotoGrid();
+  subscribeToMyEntries();
+}
+
+function showManagerScreen(){
+  showScreen('manager');
+  buildStationStatusGrid();
+  populateEngList();
+  subscribeToAllEntries();
+}
+
+// =============================================
+// FIRESTORE — ENGINEER (own entries)
+// =============================================
+function subscribeToMyEntries(){
+  if(firestoreUnsubscribe) firestoreUnsubscribe();
+  setSyncStatus('syncing','Syncing...');
+  firestoreUnsubscribe = db.collection('dpr_entries')
+    .where('dpr_date','==',DPR_DATE)
+    .where('engineer_id','==',currentEngineer.id)
+    .onSnapshot(snap=>{
+      localEntries={};
+      snap.forEach(doc=>{ const d=doc.data(); localEntries[d.boq]=d; });
+      refreshMarkers();
+      updateEngAmountBar();
+      renderEngSummary();
+      setSyncStatus('ok','Saved to cloud ✓');
+    }, err=>{ setSyncStatus('error','Sync error — check internet'); });
+}
+
+function setSyncStatus(state, text){
+  const dot=document.getElementById('sync-dot');
+  const txt=document.getElementById('sync-text');
+  if(!dot||!txt)return;
+  dot.className='sdot'+(state==='syncing'?' syncing':state==='error'?' error':'');
+  txt.textContent=text;
+}
+
+// Save entry to Firestore
+async function saveToFirestore(entry){
+  const docId = `${DPR_DATE}_${currentEngineer.id}_${entry.boq}`;
+  setSyncStatus('syncing','Saving...');
+  try{
+    await db.collection('dpr_entries').doc(docId).set({
+      ...entry,
+      dpr_date: DPR_DATE,
+      reporting_date: TODAY,
+      engineer_id: currentEngineer.id,
+      engineer_name: currentEngineer.name,
+      timestamp: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    setSyncStatus('ok','Saved to cloud ✓');
+  }catch(e){ setSyncStatus('error','Save failed — check internet'); showToast('Save failed: '+e.message,'error'); }
+}
+
+async function deleteFromFirestore(boq){
+  const docId = `${DPR_DATE}_${currentEngineer.id}_${boq}`;
+  try{ await db.collection('dpr_entries').doc(docId).delete(); }catch(e){ showToast('Delete failed','error'); }
+}
+
+// =============================================
+// FIRESTORE — MANAGER (all entries)
+// =============================================
+function subscribeToAllEntries(){
+  if(firestoreUnsubscribe) firestoreUnsubscribe();
+  firestoreUnsubscribe = db.collection('dpr_entries')
+    .where('dpr_date','==',DPR_DATE)
+    .onSnapshot(snap=>{
+      allEntries={};
+      snap.forEach(doc=>{ const d=doc.data(); allEntries[d.boq+'_'+d.engineer_id]=d; });
+      updateManagerDashboard();
+      renderAllEntries();
+    }, err=>{ showToast('Connection error','error'); });
+}
+
+// =============================================
+// BUILD STATION CARDS (Engineer)
+// =============================================
+function getType(key){ if(key.includes('CNC'))return'CNC'; if(key.includes('UGR'))return'UGR'; return'ST'; }
+
+function buildStationCards(){
+  const cont = document.getElementById('station-container');
+  cont.innerHTML='';
+  const myStations = currentEngineer.stations;
+  myStations.forEach(stKey=>{
+    const st = WBS_DATA[stKey]; if(!st)return;
+    const type = getType(stKey);
+    const sk = stKey.replace(/[^a-zA-Z0-9]/g,'_');
+    const card = document.createElement('div');
+    card.className='station-card'; card.id='card-'+sk;
+    card.innerHTML=`<div class="station-header" onclick="toggleSt('${sk}')">
+      <div class="st-badge badge-${type}">${type}</div>
+      <div class="st-info"><div class="st-name">${st.name}</div><div class="st-sub">${stKey}</div></div>
+      <span class="st-count" id="sc-${sk}">0</span>
+      <span class="st-arrow" id="sa-${sk}">›</span>
+    </div>
+    <div class="station-body" id="sb-${sk}"></div>`;
+    const body = card.querySelector('.station-body');
+    Object.entries(st.groups).forEach(([gName,gData])=>{
+      const gId=(stKey+gName).replace(/[^a-zA-Z0-9]/g,'_');
+      const grp=document.createElement('div'); grp.className='wbs-group';
+      grp.innerHTML=`<div class="wbs-header" onclick="toggleWbs('${gId}')">
+        <div class="wbs-dot"></div><div class="wbs-name">${gName}</div>
+        <span class="wbs-arr" id="wa-${gId}">›</span>
+      </div><div class="act-list" id="al-${gId}"></div>`;
+      const al=grp.querySelector('.act-list');
+      gData.activities.forEach(act=>{
+        const row=document.createElement('div');
+        row.className='act-row'; row.id='ar-'+act.boq;
+        row.innerHTML=`<div class="boq-tag">${act.boq}</div>
+          <div class="act-name">${act.desc}</div>
+          <div class="act-uom">${act.uom}</div>
+          <div class="act-qty" id="aq-${act.boq}"></div>
+          <button class="add-btn" id="ab-${act.boq}" onclick="openModal('${stKey}','${gName}','${act.boq}',event)">+</button>`;
+        al.appendChild(row);
+      });
+      body.appendChild(grp);
+    });
+    cont.appendChild(card);
+  });
+}
+
+function toggleSt(sk){
+  const body=document.getElementById('sb-'+sk);
+  const arr=document.getElementById('sa-'+sk);
+  body.classList.toggle('open'); arr.classList.toggle('open');
+}
+function toggleWbs(gId){
+  const al=document.getElementById('al-'+gId);
+  const arr=document.getElementById('wa-'+gId);
+  al.classList.toggle('open'); arr.classList.toggle('open');
+}
+
+// =============================================
+// REFRESH MARKERS
+// =============================================
+function refreshMarkers(){
+  document.querySelectorAll('.add-btn').forEach(b=>{ b.textContent='+'; b.className='add-btn'+(isLocked?' locked':''); });
+  document.querySelectorAll('.act-qty').forEach(e=>{ e.textContent=''; e.classList.remove('vis'); });
+  document.querySelectorAll('.act-row').forEach(r=>r.classList.remove('filled'));
+  document.querySelectorAll('.station-card').forEach(c=>c.classList.remove('has-entries'));
+
+  // Count per station
+  const stCounts={};
+  Object.values(localEntries).forEach(e=>{
+    const ab=document.getElementById('ab-'+e.boq);
+    const aq=document.getElementById('aq-'+e.boq);
+    const ar=document.getElementById('ar-'+e.boq);
+    if(ab){ ab.textContent='✓'; ab.classList.add('filled'); }
+    if(aq){ aq.textContent=e.qty+' '+e.uom; aq.classList.add('vis'); }
+    if(ar){ ar.classList.add('filled'); }
+    stCounts[e.stationKey]=(stCounts[e.stationKey]||0)+1;
+  });
+  Object.entries(stCounts).forEach(([stKey,cnt])=>{
+    const sk=stKey.replace(/[^a-zA-Z0-9]/g,'_');
+    const sc=document.getElementById('sc-'+sk);
+    const card=document.getElementById('card-'+sk);
+    if(sc){ sc.textContent=cnt; sc.classList.add('vis'); }
+    if(card) card.classList.add('has-entries');
+  });
+}
+
+// =============================================
+// AMOUNT BAR (Engineer)
+// =============================================
+function updateEngAmountBar(){
+  let total=0;
+  Object.values(localEntries).forEach(e=>total+=(e.amt||0));
+  document.getElementById('eng-total-amt').textContent=fmtAmt(total);
+}
+
+// =============================================
+// MODAL
+// =============================================
+function openModal(stKey,gName,boq,e){
+  if(e) e.stopPropagation();
+  if(isLocked){ showToast('Entries locked — deadline passed','error'); return; }
+  const st=WBS_DATA[stKey]; const grp=st.groups[gName];
+  const act=grp.activities.find(a=>a.boq===boq);
+  const rate=BOQ_RATES[boq]||0;
+  currentModal={stKey,stName:st.name,gName,boq,act,rate};
+  document.getElementById('m-tag').textContent=st.name+' · '+gName;
+  document.getElementById('m-title').textContent=act.desc;
+  document.getElementById('m-uom').textContent=act.uom;
+  document.getElementById('m-rate').textContent=rate>0?'₹'+fmtAmt(rate):'N/A';
+  document.getElementById('m-amt').textContent='₹0';
+  const existing=localEntries[boq];
+  document.getElementById('qty-inp').value=existing?existing.qty:'';
+  document.getElementById('remarks-inp').value=existing?(existing.remarks||')':'');
+  document.getElementById('btn-clear').style.display=existing?'':'none';
+  if(existing) document.getElementById('m-amt').textContent='₹'+fmtAmt(existing.amt);
+  document.getElementById('modal').classList.add('open');
+  setTimeout(()=>document.getElementById('qty-inp').focus(),200);
+}
+
+document.getElementById('qty-inp').addEventListener('input',function(){
+  if(!currentModal)return;
+  const v=parseFloat(this.value); const rate=currentModal.rate||0;
+  const amt=(!isNaN(v)&&v>=0&&rate>0)?v*rate:0;
+  document.getElementById('m-amt').textContent='₹'+fmtAmt(amt);
+});
+
+function closeModal(){ document.getElementById('modal').classList.remove('open'); currentModal=null; }
+
+async function saveEntry(){
+  const qty=parseFloat(document.getElementById('qty-inp').value);
+  if(isNaN(qty)||qty<0){ showToast('Enter a valid quantity','error'); return; }
+  const remarks=document.getElementById('remarks-inp').value.trim();
+  const {stKey,stName,gName,boq,act,rate}=currentModal;
+  const amt=qty*(rate||0);
+  const entry={boq,qty,amt,remarks,stationKey:stKey,stationName:stName,groupName:gName,actDesc:act.desc,uom:act.uom,rate:rate||0};
+  closeModal();
+  await saveToFirestore(entry);
+  showToast('✓ Saved: BOQ '+boq+' — '+qty+' '+act.uom);
+}
+
+async function clearEntry(){
+  const {boq}=currentModal; closeModal();
+  await deleteFromFirestore(boq);
+  showToast('Entry cleared: BOQ '+boq);
+}
+
+// =============================================
+// ENGINEER SUMMARY + EXPORT
+// =============================================
+function renderEngSummary(){
+  const list=document.getElementById('eng-summary-list');
+  const empty=document.getElementById('eng-summary-empty');
+  list.innerHTML='';
+  const entries=Object.values(localEntries);
+  if(entries.length===0){ empty.style.display='block'; return; }
+  empty.style.display='none';
+  entries.forEach(e=>{
+    const row=document.createElement('div'); row.className='sum-entry';
+    row.innerHTML=`<div class="s-st">${e.stationName}</div>
+      <div class="s-desc">${e.actDesc}${e.remarks?`<div class="s-remark">📝 ${e.remarks}</div>`:''}
+        <div class="s-amt">${e.amt>0?'₹'+fmtAmt(e.amt):'—'}</div>
+      </div>
+      <div class="s-qty">${e.qty} ${e.uom}</div>
+      <button class="s-del" onclick="deleteEngEntry('${e.boq}')">×</button>`;
+    list.appendChild(row);
+  });
+}
+
+async function deleteEngEntry(boq){
+  await deleteFromFirestore(boq); showToast('Entry removed');
+}
+
+function exportMyCSV(){
+  const entries=Object.values(localEntries);
+  if(entries.length===0){ showToast('No entries to export','error'); return; }
+  let csv='DPR Date,Reporting Date,Engineer,Station,WBS Group,BOQ No,Activity,UOM,Qty Today,BOQ Rate,DPR Amount,Remarks\n';
+  entries.forEach(e=>{
+    const r=(e.remarks||'').replace(/"/g,"''");
+    csv+=`${DPR_DATE},${TODAY},"${currentEngineer.name}","${e.stationName}","${e.groupName}","${e.boq}","${e.actDesc}","${e.uom}",${e.qty},${e.rate||0},${Math.round(e.amt||0)},"${r}"\n`;
+  });
+  downloadCSV(csv,'DPR_'+currentEngineer.name+'_'+DPR_DATE+'.csv');
+  showToast('CSV exported!');
+}
+
+// =============================================
+// PHOTO TAB
+// =============================================
+function buildPhotoGrid(){
+  const grid=document.getElementById('photo-grid'); grid.innerHTML='';
+  currentEngineer.stations.forEach(stKey=>{
+    const st=WBS_DATA[stKey]; if(!st)return;
+    const type=getType(stKey); const sk=stKey.replace(/[^a-zA-Z0-9]/g,'_');
+    const card=document.createElement('div'); card.className='photo-card';
+    card.innerHTML=`<div class="photo-card-head">
+      <div class="psb badge-${type}">${type}</div>
+      <div class="psn">${st.name}</div>
+    </div>
+    <div class="photo-card-body">
+      <div class="upload-zone" id="uz-${sk}">
+        <input type="file" accept="image/*" multiple onchange="handlePhoto('${stKey}','${sk}',this)">
+        <div class="uz-icon">📷</div>
+        <div class="uz-text">Tap to upload photos</div>
+      </div>
+      <div class="thumb-row" id="tr-${sk}"></div>
+      <div class="p-count" id="pc-${sk}"></div>
+      <button style="width:100%;margin-top:6px;background:var(--surface2);border:1px solid var(--border);border-radius:5px;padding:5px;font-family:'Rajdhani',sans-serif;font-size:11px;font-weight:700;color:var(--accent2);cursor:pointer;" onclick="downloadStPhotos('${stKey}','${sk}')">⬇ Download Photos</button>
+    </div>`;
+    grid.appendChild(card);
+  });
+}
+
+function handlePhoto(stKey,sk,input){
+  if(isLocked){ showToast('Entries locked','error'); return; }
+  const files=Array.from(input.files); if(!files.length)return;
+  if(!localPhotos[stKey]) localPhotos[stKey]=[];
+  let loaded=0;
+  files.forEach(file=>{
+    const reader=new FileReader();
+    reader.onload=ev=>{
+      const stName=(WBS_DATA[stKey].name||'').replace(/\s+/g,'_').replace(/[^a-zA-Z0-9_]/g,'');
+      const d=DPR_DATE.replace(/-/g,''); const month=DPR_DATE.substring(0,7).replace('-','');
+      const num=localPhotos[stKey].length+1;
+      const filename=`${month}_${d}_${stName}_photo${num}.jpg`;
+      localPhotos[stKey].push({dataUrl:ev.target.result,filename});
+      loaded++;
+      if(loaded===files.length){ renderThumbs(stKey,sk); updateStatPhotos(); showToast(`✓ ${files.length} photo(s) added`); }
+    };
+    reader.readAsDataURL(file);
+  });
+  input.value='';
+}
+
+function renderThumbs(stKey,sk){
+  const tr=document.getElementById('tr-'+sk);
+  const pc=document.getElementById('pc-'+sk);
+  if(!tr)return;
+  tr.innerHTML='';
+  const arr=localPhotos[stKey]||[];
+  arr.forEach((p,i)=>{
+    const div=document.createElement('div'); div.className='thumb';
+    div.innerHTML=`<img src="${p.dataUrl}">
+      <button class="t-del" onclick="delPhoto('${stKey}','${sk}',${i})">×</button>
+      <a class="t-dl" href="${p.dataUrl}" download="${p.filename}">⬇</a>`;
+    tr.appendChild(div);
+  });
+  if(pc) pc.textContent=arr.length>0?arr.length+' photo(s)':'';
+}
+
+function delPhoto(stKey,sk,idx){ if(localPhotos[stKey]) localPhotos[stKey].splice(idx,1); renderThumbs(stKey,sk); updateStatPhotos(); }
+
+function downloadStPhotos(stKey,sk){
+  const arr=localPhotos[stKey]||[];
+  if(!arr.length){ showToast('No photos for this station','error'); return; }
+  arr.forEach(p=>{ const a=document.createElement('a'); a.href=p.dataUrl; a.download=p.filename; document.body.appendChild(a); a.click(); document.body.removeChild(a); });
+  showToast('Downloading '+arr.length+' photo(s)...');
+}
+
+function updateStatPhotos(){
+  let total=0; Object.values(localPhotos).forEach(arr=>total+=arr.length);
+  document.getElementById('eng-total-amt').textContent; // just trigger re-render
+}
+
+// =============================================
+// MANAGER DASHBOARD
+// =============================================
+function buildStationStatusGrid(){
+  const grid=document.getElementById('station-status-grid'); grid.innerHTML='';
+  Object.entries(STATION_NAMES).forEach(([stKey,name])=>{
+    const sk=stKey.replace(/[^a-zA-Z0-9]/g,'_');
+    const div=document.createElement('div'); div.className='ssc pending'; div.id='ssc-'+sk;
+    div.innerHTML=`<div class="ssc-dot"></div>
+      <div class="ssc-info">
+        <div class="ssc-name">${name}</div>
+        <div class="ssc-sub" id="ssc-sub-${sk}">Pending</div>
+      </div>
+      <div class="ssc-check">✓</div>`;
+    grid.appendChild(div);
+  });
+}
+
+function updateManagerDashboard(){
+  // Count entries per station
+  const stEntries={};
+  Object.values(allEntries).forEach(e=>{
+    stEntries[e.stationKey]=(stEntries[e.stationKey]||0)+1;
+  });
+  let totalAmt=0; Object.values(allEntries).forEach(e=>totalAmt+=(e.amt||0));
+  let submitted=Object.keys(stEntries).length;
+  let totalEntries=Object.keys(allEntries).length;
+
+  // Update stat cards
+  document.getElementById('mgr-stats').innerHTML=`
+    <div class="stat-card green"><div class="sv">${submitted}</div><div class="sl">Stations Submitted</div></div>
+    <div class="stat-card"><div class="sv">${Object.keys(STATION_NAMES).length-submitted}</div><div class="sl">Stations Pending</div></div>
+    <div class="stat-card blue"><div class="sv">${totalEntries}</div><div class="sl">Total Entries</div></div>
+    <div class="stat-card"><div class="sv">₹${(totalAmt/100000).toFixed(1)}L</div><div class="sl">DPR Amount</div></div>`;
+
+  // Amount bar
+  document.getElementById('mgr-total-amt').textContent=fmtAmt(totalAmt);
+
+  // Station status cards
+  Object.entries(STATION_NAMES).forEach(([stKey,name])=>{
+    const sk=stKey.replace(/[^a-zA-Z0-9]/g,'_');
+    const card=document.getElementById('ssc-'+sk);
+    const sub=document.getElementById('ssc-sub-'+sk);
+    if(!card)return;
+    const cnt=stEntries[stKey]||0;
+    if(cnt>0){ card.className='ssc submitted'; if(sub) sub.textContent=cnt+' entries ✓'; }
+    else { card.className='ssc pending'; if(sub) sub.textContent='Pending'; }
+  });
+}
+
+function renderAllEntries(){
+  const tbody=document.getElementById('all-entries-body');
+  const empty=document.getElementById('mgr-entries-empty');
+  const entries=Object.values(allEntries);
+  if(entries.length===0){ tbody.innerHTML=''; empty.style.display='block'; return; }
+  empty.style.display='none';
+  tbody.innerHTML=entries.map(e=>`<tr>
+    <td><strong>${e.stationName}</strong></td>
+    <td>${e.groupName}</td>
+    <td>${e.boq}</td>
+    <td>${e.actDesc}</td>
+    <td>${e.uom}</td>
+    <td><strong style="color:var(--accent3)">${e.qty}</strong></td>
+    <td>${e.amt>0?'₹'+fmtAmt(e.amt):'—'}</td>
+    <td style="color:var(--purple);font-size:11px;">${e.remarks||''}</td>
+  </tr>`).join('');
+}
+
+function populateEngList(){
+  document.getElementById('eng-list-display').innerHTML=ENGINEERS.map(e=>`
+    <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);">
+      <div style="background:var(--accent);color:#000;width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Rajdhani',sans-serif;font-weight:700;font-size:12px;">${e.name.charAt(0)}</div>
+      <div><div style="font-family:'Rajdhani',sans-serif;font-weight:700;font-size:13px;color:var(--white);">${e.name}</div>
+      <div style="font-size:10px;color:var(--muted);">${e.stations.length} stations · PIN: ${e.pin}</div></div>
+    </div>`).join('');
+}
+
+// =============================================
+// MANAGER CSV EXPORT
+// =============================================
+function exportAllCSV(){
+  const entries=Object.values(allEntries);
+  if(entries.length===0){ showToast('No entries to export','error'); return; }
+  let csv='DPR Date,Reporting Date,Engineer,Station,WBS Group,BOQ No,Activity,UOM,Qty Today,BOQ Rate,DPR Amount,Network Activity,Remarks\n';
+  entries.forEach(e=>{
+    const r=(e.remarks||'').replace(/"/g,"''");
+    csv+=`${DPR_DATE},${TODAY},"${e.engineer_name||''}","${e.stationName}","${e.groupName}","${e.boq}","${e.actDesc}","${e.uom}",${e.qty},${e.rate||0},${Math.round(e.amt||0)},"${e.netAct||''}","${r}"\n`;
+  });
+  downloadCSV(csv,'DPR_ALL_STATIONS_'+DPR_DATE+'.csv');
+  showToast('All stations CSV downloaded!');
+}
+
+// =============================================
+// TAB SWITCHING
+// =============================================
+function engTab(name){
+  document.querySelectorAll('.eng-tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.eng-panel').forEach(p=>p.classList.remove('active'));
+  const idx=['entries','photos','summary'].indexOf(name);
+  document.querySelectorAll('.eng-tab')[idx].classList.add('active');
+  document.getElementById('engp-'+name).classList.add('active');
+  if(name==='summary') renderEngSummary();
+}
+
+function mgrTab(name){
+  document.querySelectorAll('.mgr-tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.mgr-panel').forEach(p=>p.classList.remove('active'));
+  const idx=['dashboard','entries','settings'].indexOf(name);
+  document.querySelectorAll('.mgr-tab')[idx].classList.add('active');
+  document.getElementById('mgrp-'+name).classList.add('active');
+}
+
+// =============================================
+// HELPERS
+// =============================================
+function downloadCSV(csv, filename){
+  // Mobile-safe download
+  const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});
+  const reader=new FileReader();
+  reader.onload=function(e){
+    const a=document.createElement('a');
+    a.href=e.target.result;
+    a.download=filename;
+    a.style.display='none';
+    document.body.appendChild(a);
+    setTimeout(()=>{ a.click(); document.body.removeChild(a); },100);
+  };
+  reader.readAsDataURL(blob);
+}
+
+function showToast(msg,type){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.className='toast'+(type==='error'?' error':type==='info'?' info':'');
+  t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),3200);
+}
+
+// Modal close on overlay click
+document.getElementById('modal').addEventListener('click',e=>{ if(e.target===document.getElementById('modal')) closeModal(); });
+document.getElementById('qty-inp').addEventListener('keydown',e=>{ if(e.key==='Enter') saveEntry(); if(e.key==='Escape') closeModal(); });
+</script>
+</body>
+</html>
