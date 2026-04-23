@@ -846,7 +846,7 @@ function openModal(stKey,gName,boq,e){
   document.getElementById('m-amt').textContent='₹0';
   const existing=localEntries[boq];
   document.getElementById('qty-inp').value=existing?existing.qty:'';
-  document.getElementById('remarks-inp').value=existing?(existing.remarks||')':'');
+  document.getElementById('remarks-inp').value=existing?(existing.remarks||''):'';
   document.getElementById('btn-clear').style.display=existing?'':'none';
   if(existing) document.getElementById('m-amt').textContent='₹'+fmtAmt(existing.amt);
   document.getElementById('modal').classList.add('open');
