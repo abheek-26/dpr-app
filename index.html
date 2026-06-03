@@ -416,7 +416,13 @@ select.form-control{cursor:pointer;}
     <button class="tab-btn" onclick="engTab('equipment')">🚧 Equipment</button>
     <button class="tab-btn" onclick="engTab('summary')">📋 Summary</button>
   </div>
-  <div class="tab-panel active" id="engp-entries"><div class="container" id="station-container"></div></div>
+  <div class="tab-panel active" id="engp-entries">
+    <div id="eng-issues-bar" style="display:none;background:rgba(239,68,68,.1);border-bottom:1px solid rgba(239,68,68,.3);padding:8px 16px;">
+      <div style="font-family:'Rajdhani',sans-serif;font-weight:700;font-size:11px;color:var(--danger);margin-bottom:4px;">&#9888; ACTIVE KEY ISSUES</div>
+      <div id="eng-issues-list"></div>
+    </div>
+    <div class="container" id="station-container"></div>
+  </div>
   <div class="tab-panel" id="engp-photos"><div class="photo-grid" id="photo-grid"></div></div>
   <div class="tab-panel" id="engp-progress"><div class="container" id="progress-container"></div></div>
   <div class="tab-panel" id="engp-labour"><div class="container" id="labour-container"></div></div>
@@ -841,7 +847,7 @@ const ENGINEERS = [
     stations:['T/9014:DC-C-ST-RAM','T/9014:DC-C-ST-BGS']},
 ];
 const MANAGER_PIN = '9999';
-let lockTime = {h:10, m:0};
+let lockTime = {h:20, m:0}; // default 20:00 — Admin can change anytime
 
 // ===== ALL MONTHLY TARGETS (keyed by YYYY-MM, from S3_Bud 25-26)
 // MONTHLY_TARGETS: see separate data script above
@@ -996,6 +1002,13 @@ let currentModal=null, firestoreUnsub=null;
 let rcCurrentStation=null;
 
 function getDateStr(d){ return d.toISOString().split('T')[0]; }
+function getReportDate(dprDateStr){
+  // Report Date = DPR Date + 1 day always
+  if(!dprDateStr) return getDateStr(new Date());
+  const d = new Date(dprDateStr + 'T12:00:00');
+  d.setDate(d.getDate() + 1);
+  return getDateStr(d);
+}
 function formatDate(d){ if(!d)return'--'; const [y,m,day]=d.split('-'); const mo=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']; return `${day}-${mo[parseInt(m)-1]}-${y}`; }
 function fmtAmt(v){ return Math.round(v||0).toLocaleString('en-IN'); }
 // All monetary display in Lakhs with 2 decimal places
@@ -1026,17 +1039,18 @@ window.addEventListener('load', async () => {
   ENGINEERS.forEach(e=>{ const o=document.createElement('option'); o.value=e.id; o.textContent=e.name; _sel.appendChild(o); });
   ['eng','mgr'].forEach(p=>{
     const dd=document.getElementById(p+'-dpr-date'), rd=document.getElementById(p+'-rep-date');
-    if(dd)dd.textContent=' '+formatDate(DPR_DATE);   // DPR date = yesterday by default
-    if(rd)rd.textContent=' '+formatDate(TODAY);       // Report date = today always
+    if(dd)dd.textContent=' '+formatDate(DPR_DATE);           // DPR date = yesterday
+    if(rd)rd.textContent=' '+formatDate(getReportDate(DPR_DATE)); // Report = DPR + 1 day
   });
   // Also init submit panel dates
   setTimeout(()=>{
     const sd=document.getElementById('submit-dpr-date');
     const sr=document.getElementById('submit-rep-date');
     if(sd) sd.textContent=formatDate(DPR_DATE);
-    if(sr) sr.textContent=formatDate(TODAY);
+    if(sr) sr.textContent=formatDate(getReportDate(DPR_DATE));
   },600);
-  checkLock(); setInterval(checkLock,60000);
+  // checkLock is now called inside loadSettingsFromFirebase after lock time is loaded
+  setInterval(checkLock, 60000); // keep checking every minute
   // Show splash for 4.5 seconds total then go to login
   // auto-advance handled by splash timer
 });
@@ -1088,15 +1102,18 @@ function showScreen(name){
 }
 function showEngineerScreen(){
   // Init submit panel dates whenever engineer screen loads
-  setTimeout(()=>{
+  // Also refresh settings from Firebase so auth is always current
+  loadSettingsFromFirebase().then(()=>{
     const sd=document.getElementById('submit-dpr-date');
     const sr=document.getElementById('submit-rep-date');
     if(sd) sd.textContent=formatDate(DPR_DATE);
-    if(sr) sr.textContent=formatDate(TODAY);
-    // Show pencil only if back-date auth
+    if(sr) sr.textContent=formatDate(getReportDate(DPR_DATE)); // Report = DPR + 1
+    // Update pencil icon tooltip based on fresh auth
     const chip=document.getElementById('dpr-date-chip');
-    if(chip) chip.title=canBackDate()?'Click to change DPR date (authorized)':'DPR date (back-date not authorized)';
-  },300); document.getElementById('eng-name-badge').textContent=currentEngineer.name; showScreen('engineer'); buildStationCards(); buildPhotoGrid(); buildProgressStatus(document.getElementById('progress-container')); buildLabourTab('labour-container'); buildEquipmentTab('equipment-container'); subscribeToMyEntries(); }
+    if(chip) chip.title=canBackDate()?'Tap to change DPR date':'DPR date (back-date not authorized)';
+    // Re-check lock with correct time from Firebase
+    checkLock();
+  }); document.getElementById('eng-name-badge').textContent=currentEngineer.name; showScreen('engineer'); buildStationCards(); buildPhotoGrid(); buildProgressStatus(document.getElementById('progress-container')); buildLabourTab('labour-container'); buildEquipmentTab('equipment-container'); subscribeToMyEntries(); }
 function showManagerScreen(){
   mgrViewDate = DPR_DATE;
   showScreen('manager');
@@ -2505,10 +2522,12 @@ async function loadMgrPhotos(){
 // BACK-DATE DPR SYSTEM
 // ============================================================
 
-function toggleDprDatePicker() {
+async function toggleDprDatePicker() {
   const picker = document.getElementById('dpr-date-picker');
   if (!picker) return;
   if (picker.style.display === 'none' || !picker.style.display) {
+    // Always fetch fresh settings from Firebase before checking
+    await loadSettingsFromFirebase();
     // Check if engineer has back-date authorization
     if (!canBackDate()) {
       showToast('Back-date DPR not authorized. Contact Admin.', 'error');
@@ -2564,7 +2583,7 @@ function changeDprDate(newDate) {
   const sd = document.getElementById('submit-dpr-date');
   const sr = document.getElementById('submit-rep-date');
   if (sd) sd.textContent = formatDate(DPR_DATE);
-  if (sr) sr.textContent = formatDate(TODAY); // Report date = today always
+  if (sr) sr.textContent = formatDate(getReportDate(DPR_DATE)); // Report = DPR + 1 day
 
   // Re-subscribe to Firestore for the new date
   // This loads ALL existing entries for that date automatically —
@@ -2584,7 +2603,11 @@ function canBackDate() {
   if (currentRole === 'admin') return true;
   if (currentEngineer) {
     const authorized = _firebaseSettings.backdate_auth_engs || [];
-    return authorized.includes(currentEngineer.id);
+    // Check by id, by name (lowercase+underscore), and by name directly
+    const engId = currentEngineer.id;
+    const engNameId = currentEngineer.name.toLowerCase().replace(/[^a-z0-9]/g,'_');
+    return authorized.includes(engId) || authorized.includes(engNameId) ||
+           authorized.some(a => a.startsWith(engNameId.split('_')[0]));
   }
   return false;
 }
@@ -2627,7 +2650,7 @@ async function submitDPR() {
       engineer_id:   currentEngineer.id,
       engineer_name: currentEngineer.name,
       dpr_date:      DPR_DATE,
-      report_date:   TODAY,
+      report_date:   getReportDate(DPR_DATE), // DPR date + 1
       entry_count:   entryCount,
       submitted_at:  new Date().toISOString(),
       is_backdate:   DPR_DATE !== TODAY,
@@ -2694,11 +2717,35 @@ async function loadSettingsFromFirebase() {
       }
     }
 
+    // 3. Load lock time from settings/lock collection
+    try {
+      const lockDoc = await db.collection('settings').doc('lock').get();
+      if (lockDoc.exists) {
+        const ld = lockDoc.data();
+        if (ld.hour !== undefined && ld.minute !== undefined) {
+          lockTime = { h: Number(ld.hour), m: Number(ld.minute) };
+        }
+      }
+      // Also load manual lock override
+      const manualDoc = await db.collection('settings').doc('manual_lock').get();
+      if (manualDoc.exists) {
+        const md = manualDoc.data();
+        if (md.locked === true) {
+          isLocked = true;
+          const banner = document.getElementById('eng-lock-banner');
+          if (banner) banner.classList.add('show');
+        } else if (md.locked === false) {
+          isLocked = false;
+        }
+      }
+    } catch(e2) { /* lock settings optional */ }
+
     _settingsLoaded = true;
+    checkLock(); // re-run with correct lock time from Firebase
   } catch(e) {
-    // Firebase not ready yet — will retry when db is available
-    // Falls back to hardcoded ENGINEERS array
+    // Silently fall back to defaults — engineers still work from hardcoded array
     _settingsLoaded = true;
+    checkLock();
   }
 }
 
