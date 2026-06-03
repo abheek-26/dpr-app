@@ -1108,6 +1108,9 @@ function showEngineerScreen(){
     const sr=document.getElementById('submit-rep-date');
     if(sd) sd.textContent=formatDate(DPR_DATE);
     if(sr) sr.textContent=formatDate(getReportDate(DPR_DATE)); // Report = DPR + 1
+    // Also update info bar chip
+    const repChip=document.getElementById('eng-rep-date');
+    if(repChip) repChip.textContent=' '+formatDate(getReportDate(DPR_DATE));
     // Update pencil icon tooltip based on fresh auth
     const chip=document.getElementById('dpr-date-chip');
     if(chip) chip.title=canBackDate()?'Tap to change DPR date':'DPR date (back-date not authorized)';
@@ -2571,15 +2574,19 @@ function changeDprDate(newDate) {
 
   DPR_DATE = newDate;
 
-  // Update DPR date display chip
+  // Update DPR date display chip (top info bar)
   const dprEl = document.getElementById('eng-dpr-date');
   if (dprEl) dprEl.textContent = ' ' + formatDate(DPR_DATE);
+
+  // Update REPORT date chip (top info bar) = DPR + 1 day
+  const repEl = document.getElementById('eng-rep-date');
+  if (repEl) repEl.textContent = ' ' + formatDate(getReportDate(DPR_DATE));
 
   // Show BACK badge when not the default DPR date
   const badge = document.getElementById('backdate-badge');
   if (badge) badge.style.display = isBackDate ? 'inline' : 'none';
 
-  // Update submit panel — always show both dates clearly
+  // Update submit panel (Summary tab) — same dates
   const sd = document.getElementById('submit-dpr-date');
   const sr = document.getElementById('submit-rep-date');
   if (sd) sd.textContent = formatDate(DPR_DATE);
