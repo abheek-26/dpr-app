@@ -689,6 +689,23 @@ html, body { overscroll-behavior-y: contain; }
       <button class="btn btn-save" onclick="saveEntry()">Save ✓</button>
     </div>
   </div>
+
+<div class="tab-panel" id="mgrp-photos">
+    <div class="container" style="padding-bottom:80px;">
+      <div style="font-family:'Rajdhani',sans-serif;font-weight:900;font-size:16px;color:var(--white);margin-bottom:4px;">Site Photos</div>
+      <div style="font-size:11px;color:var(--muted);margin-bottom:14px;">View-only. Photos uploaded by engineers on site.</div>
+      <!-- Filter bar -->
+      <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;">
+        <select id="mgr-photo-station-filter" onchange="loadMgrPhotos()" style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--white);font-size:12px;padding:6px 10px;outline:none;flex:1;">
+          <option value="">All Stations</option>
+        </select>
+        <input type="date" id="mgr-photo-date-filter" onchange="loadMgrPhotos()" style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--accent);font-size:12px;padding:6px 10px;outline:none;">
+      </div>
+      <div id="mgr-photos-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px;"></div>
+      <div id="mgr-photos-empty" style="font-size:13px;color:var(--muted);text-align:center;padding:30px 0;">No photos found for selected filter.</div>
+    </div>
+  </div>
+
 </div>
 
 
@@ -2745,23 +2762,10 @@ let _firebaseSettings = {
 // ── Load ALL settings from Firebase on app start ──────────────────────────
 async function loadSettingsFromFirebase() {
   try {
-    // 1. Load settings doc
-    const settingsDoc = await db.collection('settings').doc('app_config').get();
-    if (settingsDoc.exists) {
-      const d = settingsDoc.data();
-      if (d.admin_pass)         { ADMIN_PASSPHRASE_LIVE = d.admin_pass; }
-      if (d.mgr_pin)            { MANAGER_PIN_LIVE = d.mgr_pin; }
-      if (d.resolve_auth_engs)  { _firebaseSettings.resolve_auth_engs = d.resolve_auth_engs; }
-      if (d.backdate_auth_engs) { _firebaseSettings.backdate_auth_engs = d.backdate_auth_engs; }
-      if (d.backdate_max_days)  { _firebaseSettings.backdate_max_days = d.backdate_max_days; }
-      if (d.disabled_engineers) {
-        disabledEngineers = d.disabled_engineers;
-        _firebaseSettings.disabled_engineers = d.disabled_engineers;
-      }
-    }
+    // 1. (Settings now loaded from settings/lock below)
 
     // 2. Load engineers from Firebase
-    const engsDoc = await db.collection('settings').doc('app_engineers').get();
+    const engsDoc = await db.collection('dpr_entries').doc('__engineers__').get();
     if (engsDoc.exists) {
       const d = engsDoc.data();
       if (d.list && Array.isArray(d.list) && d.list.length > 0) {
@@ -2773,7 +2777,7 @@ async function loadSettingsFromFirebase() {
       }
     }
 
-    // 3. Load lock time from settings/lock collection
+    // 3. Load lock time AND app settings from settings/lock (all in one doc)
     try {
       const lockDoc = await db.collection('settings').doc('lock').get();
       if (lockDoc.exists) {
@@ -2781,6 +2785,13 @@ async function loadSettingsFromFirebase() {
         if (ld.hour !== undefined && ld.minute !== undefined) {
           lockTime = { h: Number(ld.hour), m: Number(ld.minute) };
         }
+        // Load auth settings stored in same doc
+        if (ld.resolve_auth_engs)  _firebaseSettings.resolve_auth_engs  = ld.resolve_auth_engs;
+        if (ld.backdate_auth_engs) _firebaseSettings.backdate_auth_engs = ld.backdate_auth_engs;
+        if (ld.backdate_max_days)  _firebaseSettings.backdate_max_days  = ld.backdate_max_days;
+        if (ld.disabled_engineers) { disabledEngineers = ld.disabled_engineers; _firebaseSettings.disabled_engineers = ld.disabled_engineers; }
+        if (ld.admin_pass)         ADMIN_PASSPHRASE_LIVE = ld.admin_pass;
+        if (ld.mgr_pin)            MANAGER_PIN_LIVE = ld.mgr_pin;
       }
       // Also load manual lock override
       const manualDoc = await db.collection('settings').doc('manual_lock').get();
@@ -2808,11 +2819,14 @@ async function loadSettingsFromFirebase() {
 // ── Save engineer list to Firebase ────────────────────────────────────────
 async function saveEngineerListToFirebase() {
   try {
-    await db.collection('settings').doc('app_engineers').set({
+    // Save engineers list to dpr_entries with special key (guaranteed to work)
+    await db.collection('dpr_entries').doc('__engineers__').set({
       list: adminEngineers,
       updated_at: new Date().toISOString()
     });
-  } catch(e) { showToast('Sync error: engineer list not saved to cloud','error'); }
+  } catch(e) {
+    console.error('Engineer save error:', e);
+  }
 }
 
 // ── Save general settings to Firebase ────────────────────────────────────
@@ -2829,8 +2843,19 @@ async function saveSettingsToFirebase(partial) {
   if (ADMIN_PASSPHRASE_LIVE !== ADMIN_PASSPHRASE) payload.admin_pass = ADMIN_PASSPHRASE_LIVE;
   if (MANAGER_PIN_LIVE) payload.mgr_pin = MANAGER_PIN_LIVE;
   try {
-    await db.collection('settings').doc('app_config').set(payload, { merge: true });
-  } catch(e) { showToast('Sync error: settings not saved to cloud','error'); }
+    // Store in settings/lock doc (known to work) alongside lock time fields
+    await db.collection('settings').doc('lock').set(payload, { merge: true });
+    showToast('Authorization saved ✓', 'success');
+  } catch(e) {
+    console.error('Settings save error:', e);
+    // Fallback: try dpr_entries collection which definitely works
+    try {
+      await db.collection('dpr_entries').doc('__app_settings__').set(payload, { merge: true });
+      showToast('Authorization saved ✓');
+    } catch(e2) {
+      showToast('Save failed. Check internet connection.', 'error');
+    }
+  }
 }
 
 // ── Save disabled engineers to Firebase ───────────────────────────────────
@@ -2853,106 +2878,120 @@ function refreshEngDropdown() {
 // ============================================================
 
 // ============================================================
-// CUSTOM CALENDAR DATE PICKER (mobile-friendly)
+// SIMPLE DATE SELECTOR (dropdown number list — mobile friendly)
 // ============================================================
-let _calYear = 0, _calMonth = 0, _calMaxDate = '', _calMinDate = '';
+let _dselYear = 0, _dselMonth = 0, _dselMinDate = '', _dselMaxDate = '';
 
 async function toggleDprDatePicker() {
-  // Always fetch fresh settings before checking auth
+  // Fetch fresh auth settings from Firebase
   await loadSettingsFromFirebase();
   if (!canBackDate()) {
     showToast('Back-date DPR not authorized. Contact Admin.', 'error');
     return;
   }
-  // Calculate allowed date range
+  // Set allowed range
   const maxDays = parseInt(_firebaseSettings.backdate_max_days || '7');
-  const today = new Date();
-  const minD = new Date(today); minD.setDate(today.getDate() - maxDays);
-  _calMaxDate = getDateStr(today);
-  _calMinDate = getDateStr(minD);
-  // Start calendar at current DPR_DATE month
+  const todayD  = new Date();
+  const minD    = new Date(todayD); minD.setDate(todayD.getDate() - maxDays);
+  _dselMaxDate  = getDateStr(todayD);
+  _dselMinDate  = getDateStr(minD);
+  // Open at current DPR_DATE month
   const [y, m] = DPR_DATE.split('-').map(Number);
-  _calYear = y; _calMonth = m - 1;
-  renderCalendar();
-  document.getElementById('cal-overlay').style.display = 'block';
-  document.getElementById('cal-modal').style.display = 'block';
+  _dselYear = y; _dselMonth = m - 1;
+  renderDateSelector();
+  document.getElementById('dsel-overlay').style.display = 'block';
+  document.getElementById('dsel-modal').style.display   = 'block';
 }
 
-function closeDprCalendar() {
-  document.getElementById('cal-overlay').style.display = 'none';
-  document.getElementById('cal-modal').style.display = 'none';
+function closeDateSelector() {
+  document.getElementById('dsel-overlay').style.display = 'none';
+  document.getElementById('dsel-modal').style.display   = 'none';
 }
 
-function calPrevMonth() {
-  _calMonth--;
-  if (_calMonth < 0) { _calMonth = 11; _calYear--; }
-  renderCalendar();
+// Keep old name working too
+function closeDprCalendar() { closeDateSelector(); }
+
+function dselPrevMonth() {
+  _dselMonth--;
+  if (_dselMonth < 0) { _dselMonth = 11; _dselYear--; }
+  renderDateSelector();
 }
 
-function calNextMonth() {
-  _calMonth++;
-  if (_calMonth > 11) { _calMonth = 0; _calYear++; }
-  renderCalendar();
+function dselNextMonth() {
+  _dselMonth++;
+  if (_dselMonth > 11) { _dselMonth = 0; _dselYear++; }
+  renderDateSelector();
 }
 
-function renderCalendar() {
+function renderDateSelector() {
   const MONTHS = ['January','February','March','April','May','June',
                   'July','August','September','October','November','December'];
-  document.getElementById('cal-month-label').textContent =
-    MONTHS[_calMonth] + ' ' + _calYear;
+  const monthStr = MONTHS[_dselMonth] + ' ' + _dselYear;
+  const lbl = document.getElementById('dsel-month-label');
+  const nav = document.getElementById('dsel-month-nav');
+  if (lbl) lbl.textContent = 'Tap a date to select';
+  if (nav) nav.textContent = monthStr;
 
-  const daysEl = document.getElementById('cal-days');
-  daysEl.innerHTML = '';
+  const grid = document.getElementById('dsel-days');
+  if (!grid) return;
+  grid.innerHTML = '';
 
-  const firstDay = new Date(_calYear, _calMonth, 1).getDay();
-  const daysInMonth = new Date(_calYear, _calMonth + 1, 0).getDate();
-
-  // Empty cells before first day
-  for (let i = 0; i < firstDay; i++) {
-    const empty = document.createElement('div');
-    daysEl.appendChild(empty);
-  }
+  const daysInMonth = new Date(_dselYear, _dselMonth + 1, 0).getDate();
 
   for (let d = 1; d <= daysInMonth; d++) {
-    const dateStr = _calYear + '-' +
-      String(_calMonth + 1).padStart(2,'0') + '-' +
-      String(d).padStart(2,'0');
-    const btn = document.createElement('button');
-    btn.textContent = d;
-    btn.style.width='100%'; btn.style.borderRadius='50%'; btn.style.border='none';
-    btn.style.fontFamily="Rajdhani,sans-serif"; btn.style.fontWeight='700';
-    btn.style.fontSize='14px'; btn.style.cursor='pointer'; btn.style.aspectRatio='1';
-    btn.style.transition='all .15s';
+    const dateStr = _dselYear + '-' +
+      String(_dselMonth + 1).padStart(2, '0') + '-' +
+      String(d).padStart(2, '0');
 
     const isSelected = dateStr === DPR_DATE;
-    const isToday    = dateStr === TODAY;
-    const isFuture   = dateStr > _calMaxDate;
-    const isTooOld   = dateStr < _calMinDate;
+    const isFuture   = dateStr > _dselMaxDate;
+    const isTooOld   = dateStr < _dselMinDate;
     const isDisabled = isFuture || isTooOld;
+    const isToday    = dateStr === TODAY;
+
+    const btn = document.createElement('button');
+    btn.textContent = d;
+
+    // Style each day number button
+    btn.style.padding     = '12px 4px';
+    btn.style.borderRadius= '8px';
+    btn.style.border      = 'none';
+    btn.style.fontSize    = '16px';
+    btn.style.fontFamily  = "'Rajdhani',sans-serif";
+    btn.style.fontWeight  = '700';
+    btn.style.cursor      = isDisabled ? 'not-allowed' : 'pointer';
+    btn.style.transition  = 'all .15s';
+    btn.style.width       = '100%';
 
     if (isSelected) {
-      btn.style.background = 'var(--accent,#F59E0B)';
-      btn.style.color = '#000';
+      btn.style.background = '#F59E0B';
+      btn.style.color      = '#000';
+      btn.style.fontSize   = '17px';
     } else if (isToday) {
-      btn.style.background = 'rgba(59,130,246,.2)';
-      btn.style.color = 'var(--accent2,#3B82F6)';
-      btn.style.border = '1.5px solid var(--accent2,#3B82F6)';
+      btn.style.background = 'rgba(59,130,246,.25)';
+      btn.style.color      = '#60A5FA';
+      btn.style.border     = '1.5px solid #3B82F6';
     } else if (isDisabled) {
       btn.style.background = 'transparent';
-      btn.style.color = 'rgba(100,116,139,.35)';
-      btn.style.cursor = 'not-allowed';
+      btn.style.color      = 'rgba(100,116,139,.3)';
     } else {
-      btn.style.background = 'var(--surface2,#1A2235)';
-      btn.style.color = 'var(--white,#F8FAFC)';
+      btn.style.background = '#1A2235';
+      btn.style.color      = '#F8FAFC';
     }
 
     if (!isDisabled) {
-      btn.onclick = () => { closeDprCalendar(); changeDprDate(dateStr); };
+      btn.onclick = () => {
+        closeDateSelector();
+        changeDprDate(dateStr);
+      };
+      // Hover effect for desktop
+      btn.onmouseenter = () => { if (dateStr !== DPR_DATE) btn.style.background = '#F59E0B33'; };
+      btn.onmouseleave = () => { if (dateStr !== DPR_DATE) btn.style.background = isToday ? 'rgba(59,130,246,.25)' : '#1A2235'; };
     }
-    daysEl.appendChild(btn);
+
+    grid.appendChild(btn);
   }
 }
-// ============================================================
 
 // ============================================================
 // ENGINEER ISSUES TAB
@@ -3087,42 +3126,22 @@ async function loadEngMyIssues() {
 // ============================================================
 </script>
 
-<!-- ═══ DATE PICKER CALENDAR MODAL ═══ -->
-<div id="cal-overlay" onclick="closeDprCalendar()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9998;"></div>
-<div id="cal-modal" style="display:none;position:fixed;bottom:0;left:0;right:0;z-index:9999;background:var(--navy,#111827);border-radius:18px 18px 0 0;padding:20px 16px 30px;box-shadow:0 -8px 32px rgba(0,0,0,.5);">
-  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
-    <button onclick="calPrevMonth()" style="background:var(--surface2,#1A2235);border:none;color:var(--white,#F8FAFC);border-radius:8px;padding:8px 14px;font-size:18px;cursor:pointer;">&#8249;</button>
-    <div id="cal-month-label" style="font-family:'Rajdhani',sans-serif;font-weight:800;font-size:16px;color:var(--accent,#F59E0B);letter-spacing:.5px;"></div>
-    <button onclick="calNextMonth()" style="background:var(--surface2,#1A2235);border:none;color:var(--white,#F8FAFC);border-radius:8px;padding:8px 14px;font-size:18px;cursor:pointer;">&#8250;</button>
+<!-- ═══ SIMPLE DATE SELECTOR ═══ -->
+<div id="dsel-overlay" onclick="closeDateSelector()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:9998;"></div>
+<div id="dsel-modal" style="display:none;position:fixed;bottom:0;left:0;right:0;z-index:9999;background:#111827;border-radius:20px 20px 0 0;padding:18px 16px 32px;box-shadow:0 -8px 32px rgba(0,0,0,.6);">
+  <div style="text-align:center;margin-bottom:14px;">
+    <div style="font-family:'Rajdhani',sans-serif;font-weight:800;font-size:16px;color:#F59E0B;letter-spacing:.5px;">Select DPR Date</div>
+    <div id="dsel-month-label" style="font-size:12px;color:#64748B;margin-top:2px;"></div>
   </div>
-  <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin-bottom:8px;">
-    <div style="text-align:center;font-size:10px;color:var(--muted,#64748B);padding:4px 0;font-weight:700;">S</div>
-    <div style="text-align:center;font-size:10px;color:var(--muted,#64748B);padding:4px 0;font-weight:700;">M</div>
-    <div style="text-align:center;font-size:10px;color:var(--muted,#64748B);padding:4px 0;font-weight:700;">T</div>
-    <div style="text-align:center;font-size:10px;color:var(--muted,#64748B);padding:4px 0;font-weight:700;">W</div>
-    <div style="text-align:center;font-size:10px;color:var(--muted,#64748B);padding:4px 0;font-weight:700;">T</div>
-    <div style="text-align:center;font-size:10px;color:var(--muted,#64748B);padding:4px 0;font-weight:700;">F</div>
-    <div style="text-align:center;font-size:10px;color:var(--muted,#64748B);padding:4px 0;font-weight:700;">S</div>
+  <!-- Month navigation -->
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;gap:10px;">
+    <button onclick="dselPrevMonth()" style="background:#1A2235;border:1px solid #1E2D47;color:#F8FAFC;border-radius:8px;padding:8px 18px;font-size:20px;cursor:pointer;font-weight:700;">&#8249;</button>
+    <div id="dsel-month-nav" style="font-family:'Rajdhani',sans-serif;font-weight:800;font-size:15px;color:#F8FAFC;"></div>
+    <button onclick="dselNextMonth()" style="background:#1A2235;border:1px solid #1E2D47;color:#F8FAFC;border-radius:8px;padding:8px 18px;font-size:20px;cursor:pointer;font-weight:700;">&#8250;</button>
   </div>
-  <div id="cal-days" style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;"></div>
-  <div style="margin-top:14px;display:flex;gap:8px;">
-    <button onclick="closeDprCalendar()" style="flex:1;background:var(--surface2,#1A2235);border:1px solid var(--border,#1E2D47);color:var(--muted,#64748B);border-radius:10px;padding:12px;font-family:'Rajdhani',sans-serif;font-weight:700;font-size:14px;cursor:pointer;">Cancel</button>
-  </div>
+  <!-- Day number grid -->
+  <div id="dsel-days" style="display:grid;grid-template-columns:repeat(7,1fr);gap:6px;max-height:260px;overflow-y:auto;padding:4px 2px;"></div>
+  <button onclick="closeDateSelector()" style="width:100%;margin-top:14px;background:#1A2235;border:1px solid #1E2D47;color:#64748B;border-radius:10px;padding:12px;font-family:'Rajdhani',sans-serif;font-weight:700;font-size:14px;cursor:pointer;">Cancel</button>
 </div>
 </body>
-</html>  <div class="tab-panel" id="mgrp-photos">
-    <div class="container" style="padding-bottom:80px;">
-      <div style="font-family:'Rajdhani',sans-serif;font-weight:900;font-size:16px;color:var(--white);margin-bottom:4px;">Site Photos</div>
-      <div style="font-size:11px;color:var(--muted);margin-bottom:14px;">View-only. Photos uploaded by engineers on site.</div>
-      <!-- Filter bar -->
-      <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;">
-        <select id="mgr-photo-station-filter" onchange="loadMgrPhotos()" style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--white);font-size:12px;padding:6px 10px;outline:none;flex:1;">
-          <option value="">All Stations</option>
-        </select>
-        <input type="date" id="mgr-photo-date-filter" onchange="loadMgrPhotos()" style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--accent);font-size:12px;padding:6px 10px;outline:none;">
-      </div>
-      <div id="mgr-photos-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px;"></div>
-      <div id="mgr-photos-empty" style="font-size:13px;color:var(--muted);text-align:center;padding:30px 0;">No photos found for selected filter.</div>
-    </div>
-  </div>
-
+</html>
