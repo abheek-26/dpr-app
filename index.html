@@ -2751,19 +2751,19 @@ async function submitDPR() {
 // so the app works identically on every device
 // ============================================================
 let _firebaseSettings = {
-  admin_pass:         null,  // admin passphrase override
-  mgr_pin:            null,  // manager PIN override
-  resolve_auth_engs:  [],    // engineers authorized to resolve issues
-  backdate_auth_engs: [],    // engineers authorized to enter back-date DPR
-  backdate_max_days:  '7',   // max days for back-date entry
-  disabled_engineers: [],    // disabled engineer IDs
+  admin_pass:         null,
+  mgr_pin:            null,
+  resolve_auth_engs:  ['ketan_r'],   // Ketan.R permanently authorized to resolve issues
+  backdate_auth_engs: ['ketan_r'],   // Ketan.R permanently authorized for back-date DPR
+  backdate_max_days:  '30',          // 30 days back-date allowed for Ketan.R
+  disabled_engineers: [],
 };
 
 // ── Load ALL settings from Firebase on app start ──────────────────────────
 async function loadSettingsFromFirebase() {
   try {
     // Load ALL settings from dpr_entries/__settings__ (open collection, no rule issues)
-    const settingsDoc = await db.collection('dpr_entries').doc('__settings__').get();
+    const settingsDoc = await db.collection('dpr_entries').doc('app_settings').get();
     if (settingsDoc.exists) {
       const d = settingsDoc.data();
       if (d.resolve_auth_engs)  _firebaseSettings.resolve_auth_engs  = d.resolve_auth_engs;
@@ -2775,7 +2775,7 @@ async function loadSettingsFromFirebase() {
     }
 
     // Load engineers list
-    const engsDoc = await db.collection('dpr_entries').doc('__engineers__').get();
+    const engsDoc = await db.collection('dpr_entries').doc('app_engineers').get();
     if (engsDoc.exists) {
       const d = engsDoc.data();
       if (d.list && Array.isArray(d.list) && d.list.length > 0) {
@@ -2810,7 +2810,7 @@ async function loadSettingsFromFirebase() {
 async function saveEngineerListToFirebase() {
   try {
     // Save engineers list to dpr_entries with special key (guaranteed to work)
-    await db.collection('dpr_entries').doc('__engineers__').set({
+    await db.collection('dpr_entries').doc('app_engineers').set({
       list: adminEngineers,
       updated_at: new Date().toISOString()
     });
@@ -2833,7 +2833,7 @@ async function saveSettingsToFirebase(partial) {
   if (MANAGER_PIN_LIVE) payload.mgr_pin = MANAGER_PIN_LIVE;
   // Save to dpr_entries/__settings__ — this collection is always writable
   try {
-    await db.collection('dpr_entries').doc('__settings__').set(payload, { merge: true });
+    await db.collection('dpr_entries').doc('app_settings').set(payload, { merge: true });
     showToast('Saved to cloud ✓');
   } catch(e) {
     console.error('saveSettingsToFirebase failed:', e);
