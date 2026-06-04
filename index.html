@@ -2762,58 +2762,48 @@ let _firebaseSettings = {
 // ── Load ALL settings from Firebase on app start ──────────────────────────
 async function loadSettingsFromFirebase() {
   try {
-    // 1. (Settings now loaded from settings/lock below)
+    // Load ALL settings from dpr_entries/__settings__ (open collection, no rule issues)
+    const settingsDoc = await db.collection('dpr_entries').doc('__settings__').get();
+    if (settingsDoc.exists) {
+      const d = settingsDoc.data();
+      if (d.resolve_auth_engs)  _firebaseSettings.resolve_auth_engs  = d.resolve_auth_engs;
+      if (d.backdate_auth_engs) _firebaseSettings.backdate_auth_engs = d.backdate_auth_engs;
+      if (d.backdate_max_days)  _firebaseSettings.backdate_max_days  = d.backdate_max_days;
+      if (d.disabled_engineers) { disabledEngineers = d.disabled_engineers; _firebaseSettings.disabled_engineers = d.disabled_engineers; }
+      if (d.admin_pass)         ADMIN_PASSPHRASE_LIVE = d.admin_pass;
+      if (d.mgr_pin)            MANAGER_PIN_LIVE = d.mgr_pin;
+    }
 
-    // 2. Load engineers from Firebase
+    // Load engineers list
     const engsDoc = await db.collection('dpr_entries').doc('__engineers__').get();
     if (engsDoc.exists) {
       const d = engsDoc.data();
       if (d.list && Array.isArray(d.list) && d.list.length > 0) {
         adminEngineers = d.list;
-        // Merge into ENGINEERS array (built-in + Firebase-added)
-        d.list.forEach(e => {
-          if (!ENGINEERS.find(x => x.id === e.id)) ENGINEERS.push(e);
-        });
+        d.list.forEach(e => { if (!ENGINEERS.find(x => x.id === e.id)) ENGINEERS.push(e); });
       }
     }
 
-    // 3. Load lock time AND app settings from settings/lock (all in one doc)
-    try {
-      const lockDoc = await db.collection('settings').doc('lock').get();
-      if (lockDoc.exists) {
-        const ld = lockDoc.data();
-        if (ld.hour !== undefined && ld.minute !== undefined) {
-          lockTime = { h: Number(ld.hour), m: Number(ld.minute) };
-        }
-        // Load auth settings stored in same doc
-        if (ld.resolve_auth_engs)  _firebaseSettings.resolve_auth_engs  = ld.resolve_auth_engs;
-        if (ld.backdate_auth_engs) _firebaseSettings.backdate_auth_engs = ld.backdate_auth_engs;
-        if (ld.backdate_max_days)  _firebaseSettings.backdate_max_days  = ld.backdate_max_days;
-        if (ld.disabled_engineers) { disabledEngineers = ld.disabled_engineers; _firebaseSettings.disabled_engineers = ld.disabled_engineers; }
-        if (ld.admin_pass)         ADMIN_PASSPHRASE_LIVE = ld.admin_pass;
-        if (ld.mgr_pin)            MANAGER_PIN_LIVE = ld.mgr_pin;
+    // Load lock time from settings/lock (only reads allowed fields)
+    const lockDoc = await db.collection('settings').doc('lock').get().catch(()=>null);
+    if (lockDoc && lockDoc.exists) {
+      const ld = lockDoc.data();
+      if (ld.hour !== undefined && ld.minute !== undefined) {
+        lockTime = { h: Number(ld.hour), m: Number(ld.minute) };
       }
-      // Also load manual lock override
-      const manualDoc = await db.collection('settings').doc('manual_lock').get();
-      if (manualDoc.exists) {
-        const md = manualDoc.data();
-        if (md.locked === true) {
-          isLocked = true;
-          const banner = document.getElementById('eng-lock-banner');
-          if (banner) banner.classList.add('show');
-        } else if (md.locked === false) {
-          isLocked = false;
-        }
-      }
-    } catch(e2) { /* lock settings optional */ }
-
-    _settingsLoaded = true;
-    checkLock(); // re-run with correct lock time from Firebase
+    }
+    // Load manual lock
+    const manualDoc = await db.collection('settings').doc('manual_lock').get().catch(()=>null);
+    if (manualDoc && manualDoc.exists) {
+      const md = manualDoc.data();
+      if (md.locked === true)  { isLocked = true;  const b=document.getElementById('eng-lock-banner'); if(b) b.classList.add('show'); }
+      if (md.locked === false)   isLocked = false;
+    }
   } catch(e) {
-    // Silently fall back to defaults — engineers still work from hardcoded array
-    _settingsLoaded = true;
-    checkLock();
+    console.warn('loadSettingsFromFirebase:', e.message);
   }
+  _settingsLoaded = true;
+  checkLock();
 }
 
 // ── Save engineer list to Firebase ────────────────────────────────────────
@@ -2831,30 +2821,23 @@ async function saveEngineerListToFirebase() {
 
 // ── Save general settings to Firebase ────────────────────────────────────
 async function saveSettingsToFirebase(partial) {
-  // Merge partial into _firebaseSettings
   if (partial) Object.assign(_firebaseSettings, partial);
   const payload = {
     resolve_auth_engs:  _firebaseSettings.resolve_auth_engs  || [],
     backdate_auth_engs: _firebaseSettings.backdate_auth_engs || [],
     backdate_max_days:  _firebaseSettings.backdate_max_days  || '7',
     disabled_engineers: _firebaseSettings.disabled_engineers || [],
-    updated_at: new Date().toISOString(),
+    updated_at:         new Date().toISOString(),
   };
   if (ADMIN_PASSPHRASE_LIVE !== ADMIN_PASSPHRASE) payload.admin_pass = ADMIN_PASSPHRASE_LIVE;
   if (MANAGER_PIN_LIVE) payload.mgr_pin = MANAGER_PIN_LIVE;
+  // Save to dpr_entries/__settings__ — this collection is always writable
   try {
-    // Store in settings/lock doc (known to work) alongside lock time fields
-    await db.collection('settings').doc('lock').set(payload, { merge: true });
-    showToast('Authorization saved ✓', 'success');
+    await db.collection('dpr_entries').doc('__settings__').set(payload, { merge: true });
+    showToast('Saved to cloud ✓');
   } catch(e) {
-    console.error('Settings save error:', e);
-    // Fallback: try dpr_entries collection which definitely works
-    try {
-      await db.collection('dpr_entries').doc('__app_settings__').set(payload, { merge: true });
-      showToast('Authorization saved ✓');
-    } catch(e2) {
-      showToast('Save failed. Check internet connection.', 'error');
-    }
+    console.error('saveSettingsToFirebase failed:', e);
+    showToast('Error: ' + (e.message || 'check internet'), 'error');
   }
 }
 
