@@ -284,6 +284,9 @@ select.form-control{cursor:pointer;}
 @keyframes spin{to{transform:rotate(360deg)}}
 
 @media(min-width:600px){.modal-overlay{align-items:center;}.modal{border-radius:16px;max-height:85vh;}}
+
+/* ── Prevent accidental pull-to-refresh on mobile ── */
+html, body { overscroll-behavior-y: contain; }
 </style>
 </head>
 <body>
@@ -397,21 +400,19 @@ select.form-control{cursor:pointer;}
   <div class="sync-bar"><div class="sdot" id="sync-dot"></div><span id="sync-text">Connecting...</span></div>
   <div class="lock-banner" id="eng-lock-banner">🔒 DPR ENTRY LOCKED — Submission closed for today</div>
   <div class="info-bar" style="flex-wrap:wrap;gap:4px;">
-    <div class="date-chip" id="dpr-date-chip" style="cursor:pointer;position:relative;" onclick="toggleDprDatePicker()" title="Click to change DPR date">
+    <div class="date-chip" id="dpr-date-chip" style="cursor:pointer;" onclick="toggleDprDatePicker()" title="Tap to change DPR date">
       DPR:&nbsp;<span id="eng-dpr-date" style="color:var(--accent);font-weight:700;">--</span>
       <span id="backdate-badge" style="display:none;margin-left:4px;background:var(--purple);color:#fff;border-radius:3px;font-size:8px;padding:1px 4px;font-weight:700;">BACK</span>
-      <span style="font-size:9px;color:var(--muted);margin-left:2px;">✎</span>
-      <input type="date" id="dpr-date-picker"
-        style="position:absolute;top:110%;left:0;z-index:999;background:var(--surface2);border:1.5px solid var(--accent);border-radius:6px;color:var(--accent);font-size:13px;padding:5px 8px;outline:none;display:none;"
-        onchange="changeDprDate(this.value)" />
+      <span style="font-size:10px;color:var(--muted);margin-left:3px;">✎</span>
     </div>
     <div class="date-chip">Report:&nbsp;<span id="eng-rep-date" style="color:var(--accent2);">--</span></div>
     <div class="amt-display">&#8377; <span id="eng-total-amt">0</span></div>
   </div>
   <div class="tab-nav" id="eng-tab-nav">
     <button class="tab-btn active" onclick="engTab('entries')">📊 DPR Entries</button>
+    <button class="tab-btn" onclick="engTab('issues')">🚨 Issues</button>
     <button class="tab-btn" onclick="engTab('photos')">📷 Photos</button>
-    <button class="tab-btn" onclick="engTab('progress')">📈 Progress Status</button>
+    <button class="tab-btn" onclick="engTab('progress')">📈 Progress</button>
     <button class="tab-btn" onclick="engTab('labour')">👷 Labour</button>
     <button class="tab-btn" onclick="engTab('equipment')">🚧 Equipment</button>
     <button class="tab-btn" onclick="engTab('summary')">📋 Summary</button>
@@ -423,6 +424,75 @@ select.form-control{cursor:pointer;}
     </div>
     <div class="container" id="station-container"></div>
   </div>
+
+  <div class="tab-panel" id="engp-issues">
+    <div class="container" style="padding-bottom:100px;">
+
+      <!-- Active issues list -->
+      <div style="margin-bottom:14px;">
+        <div style="font-family:'Rajdhani',sans-serif;font-weight:800;font-size:14px;color:var(--danger);letter-spacing:.5px;margin-bottom:8px;">🚨 MY ACTIVE ISSUES</div>
+        <div id="eng-my-issues-list">
+          <div style="font-size:12px;color:var(--muted);padding:10px 0;">No active issues. Add one below.</div>
+        </div>
+      </div>
+
+      <div style="height:1px;background:var(--border);margin-bottom:14px;"></div>
+
+      <!-- Add new issue form -->
+      <div style="font-family:'Rajdhani',sans-serif;font-weight:800;font-size:13px;color:var(--accent);letter-spacing:.5px;margin-bottom:10px;">➕ RAISE A NEW ISSUE</div>
+
+      <!-- Station selector -->
+      <div style="margin-bottom:10px;">
+        <label style="display:block;font-family:'Rajdhani',sans-serif;font-weight:600;font-size:10px;letter-spacing:1px;color:var(--muted);margin-bottom:5px;">LOCATION / STATION</label>
+        <select id="issue-station" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--white);font-family:'Rajdhani',sans-serif;font-size:13px;padding:9px 10px;outline:none;">
+          <option value="">-- Select Station --</option>
+        </select>
+      </div>
+
+      <!-- Issue description -->
+      <div style="margin-bottom:10px;">
+        <label style="display:block;font-family:'Rajdhani',sans-serif;font-weight:600;font-size:10px;letter-spacing:1px;color:var(--muted);margin-bottom:5px;">ISSUE DESCRIPTION</label>
+        <textarea id="issue-desc" rows="3" placeholder="Describe the issue clearly..." style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--white);font-family:'Rajdhani',sans-serif;font-size:13px;padding:9px 10px;outline:none;resize:none;box-sizing:border-box;"></textarea>
+      </div>
+
+      <!-- Priority -->
+      <div style="margin-bottom:10px;">
+        <label style="display:block;font-family:'Rajdhani',sans-serif;font-weight:600;font-size:10px;letter-spacing:1px;color:var(--muted);margin-bottom:5px;">PRIORITY LEVEL</label>
+        <div style="display:flex;gap:6px;">
+          <button id="iprio-high" onclick="setIssuePriority('High')" style="flex:1;padding:9px;border-radius:6px;border:1.5px solid rgba(239,68,68,.4);background:rgba(239,68,68,.1);color:var(--danger);font-family:'Rajdhani',sans-serif;font-weight:700;font-size:12px;cursor:pointer;">🔴 High</button>
+          <button id="iprio-med" onclick="setIssuePriority('Medium')" style="flex:1;padding:9px;border-radius:6px;border:1.5px solid rgba(245,158,11,.3);background:rgba(245,158,11,.06);color:var(--accent);font-family:'Rajdhani',sans-serif;font-weight:700;font-size:12px;cursor:pointer;">🟡 Medium</button>
+          <button id="iprio-low" onclick="setIssuePriority('Low')" style="flex:1;padding:9px;border-radius:6px;border:1.5px solid rgba(16,185,129,.25);background:rgba(16,185,129,.06);color:var(--accent3);font-family:'Rajdhani',sans-serif;font-weight:700;font-size:12px;cursor:pointer;">🟢 Low</button>
+        </div>
+      </div>
+
+      <!-- Departments (multiple selection) -->
+      <div style="margin-bottom:12px;">
+        <label style="display:block;font-family:'Rajdhani',sans-serif;font-weight:600;font-size:10px;letter-spacing:1px;color:var(--muted);margin-bottom:6px;">RESPONSIBLE DEPARTMENT(S) — Select all that apply</label>
+        <div id="issue-dept-list" style="display:flex;flex-wrap:wrap;gap:6px;">
+          <label style="display:flex;align-items:center;gap:5px;background:var(--surface2);border:1px solid var(--border);border-radius:5px;padding:5px 10px;cursor:pointer;font-size:11px;color:var(--text);">
+              <input type="checkbox" name="issue-dept-cb" value="PMT" style="cursor:pointer;accent-color:var(--blue);"> PMT</label><label style="display:flex;align-items:center;gap:5px;background:var(--surface2);border:1px solid var(--border);border-radius:5px;padding:5px 10px;cursor:pointer;font-size:11px;color:var(--text);">
+              <input type="checkbox" name="issue-dept-cb" value="Planning" style="cursor:pointer;accent-color:var(--blue);"> Planning</label><label style="display:flex;align-items:center;gap:5px;background:var(--surface2);border:1px solid var(--border);border-radius:5px;padding:5px 10px;cursor:pointer;font-size:11px;color:var(--text);">
+              <input type="checkbox" name="issue-dept-cb" value="QS / Billing" style="cursor:pointer;accent-color:var(--blue);"> QS / Billing</label><label style="display:flex;align-items:center;gap:5px;background:var(--surface2);border:1px solid var(--border);border-radius:5px;padding:5px 10px;cursor:pointer;font-size:11px;color:var(--text);">
+              <input type="checkbox" name="issue-dept-cb" value="Contracts" style="cursor:pointer;accent-color:var(--blue);"> Contracts</label><label style="display:flex;align-items:center;gap:5px;background:var(--surface2);border:1px solid var(--border);border-radius:5px;padding:5px 10px;cursor:pointer;font-size:11px;color:var(--text);">
+              <input type="checkbox" name="issue-dept-cb" value="Client Billing" style="cursor:pointer;accent-color:var(--blue);"> Client Billing</label><label style="display:flex;align-items:center;gap:5px;background:var(--surface2);border:1px solid var(--border);border-radius:5px;padding:5px 10px;cursor:pointer;font-size:11px;color:var(--text);">
+              <input type="checkbox" name="issue-dept-cb" value="Store / Procurement" style="cursor:pointer;accent-color:var(--blue);"> Store / Procurement</label><label style="display:flex;align-items:center;gap:5px;background:var(--surface2);border:1px solid var(--border);border-radius:5px;padding:5px 10px;cursor:pointer;font-size:11px;color:var(--text);">
+              <input type="checkbox" name="issue-dept-cb" value="HR / Admin" style="cursor:pointer;accent-color:var(--blue);"> HR / Admin</label><label style="display:flex;align-items:center;gap:5px;background:var(--surface2);border:1px solid var(--border);border-radius:5px;padding:5px 10px;cursor:pointer;font-size:11px;color:var(--text);">
+              <input type="checkbox" name="issue-dept-cb" value="Design" style="cursor:pointer;accent-color:var(--blue);"> Design</label><label style="display:flex;align-items:center;gap:5px;background:var(--surface2);border:1px solid var(--border);border-radius:5px;padding:5px 10px;cursor:pointer;font-size:11px;color:var(--text);">
+              <input type="checkbox" name="issue-dept-cb" value="Safety" style="cursor:pointer;accent-color:var(--blue);"> Safety</label><label style="display:flex;align-items:center;gap:5px;background:var(--surface2);border:1px solid var(--border);border-radius:5px;padding:5px 10px;cursor:pointer;font-size:11px;color:var(--text);">
+              <input type="checkbox" name="issue-dept-cb" value="QA / QC" style="cursor:pointer;accent-color:var(--blue);"> QA / QC</label><label style="display:flex;align-items:center;gap:5px;background:var(--surface2);border:1px solid var(--border);border-radius:5px;padding:5px 10px;cursor:pointer;font-size:11px;color:var(--text);">
+              <input type="checkbox" name="issue-dept-cb" value="Equipment" style="cursor:pointer;accent-color:var(--blue);"> Equipment</label><label style="display:flex;align-items:center;gap:5px;background:var(--surface2);border:1px solid var(--border);border-radius:5px;padding:5px 10px;cursor:pointer;font-size:11px;color:var(--text);">
+              <input type="checkbox" name="issue-dept-cb" value="Survey" style="cursor:pointer;accent-color:var(--blue);"> Survey</label><label style="display:flex;align-items:center;gap:5px;background:var(--surface2);border:1px solid var(--border);border-radius:5px;padding:5px 10px;cursor:pointer;font-size:11px;color:var(--text);">
+              <input type="checkbox" name="issue-dept-cb" value="Utility" style="cursor:pointer;accent-color:var(--blue);"> Utility</label>
+        </div>
+      </div>
+
+      <!-- Submit button -->
+      <button onclick="submitEngIssue()" style="width:100%;background:var(--danger);color:#fff;border:none;border-radius:10px;padding:14px;font-family:'Rajdhani',sans-serif;font-weight:800;font-size:15px;letter-spacing:.5px;cursor:pointer;box-shadow:0 4px 14px rgba(239,68,68,.3);">
+        🚨 RAISE ISSUE
+      </button>
+    </div>
+  </div>
+
   <div class="tab-panel" id="engp-photos"><div class="photo-grid" id="photo-grid"></div></div>
   <div class="tab-panel" id="engp-progress"><div class="container" id="progress-container"></div></div>
   <div class="tab-panel" id="engp-labour"><div class="container" id="labour-container"></div></div>
@@ -607,13 +677,7 @@ select.form-control{cursor:pointer;}
           <span>Monthly Target: <strong id="m-target">--</strong></span><span>Achieved So Far: <strong id="m-achieved">--</strong></span>
         </div>
       </div>
-      <div style="margin-bottom:8px;">
-        <label style="display:block;font-family:'Rajdhani',sans-serif;font-weight:600;font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-bottom:5px;">&#127962; Responsible Department</label>
-        <select id="entry-dept" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:5px;color:var(--white);font-family:'Rajdhani',sans-serif;font-size:12px;padding:6px 8px;outline:none;">
-          <option value="">-- Select Department (optional) --</option>
-          <option value="PMT">PMT</option><option value="Planning">Planning</option><option value="QS / Billing">QS / Billing</option><option value="Contracts">Contracts</option><option value="Client Billing">Client Billing</option><option value="Store / Procurement">Store / Procurement</option><option value="HR / Admin">HR / Admin</option><option value="Design">Design</option><option value="Safety">Safety</option><option value="QA / QC">QA / QC</option><option value="Equipment">Equipment</option><option value="Survey">Survey</option><option value="Utility">Utility</option>
-        </select>
-      </div>
+
       <div>
         <label style="display:block;font-family:'Rajdhani',sans-serif;font-weight:600;font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-bottom:5px;">&#128221; Issues / Remarks</label>
         <textarea class="remarks-inp" id="remarks-inp" placeholder="Reason if target not achieved..."></textarea>
@@ -1018,6 +1082,37 @@ function fmtQty(v){ return v==null?'0':parseFloat(v).toFixed(2); }
 // ===== INIT =====
 // Show splash immediately on DOM ready
 document.addEventListener('DOMContentLoaded', () => {
+  // Try to restore previous session (prevents splash on accidental refresh)
+  try {
+    const saved = sessionStorage.getItem('dpr_session');
+    if (saved) {
+      const sess = JSON.parse(saved);
+      if (sess.role === 'engineer' && sess.engId) {
+        // Restore engineer — wait for Firebase to init first
+        setTimeout(async () => {
+          await loadSettingsFromFirebase();
+          const eng = ENGINEERS.find(e => e.id === sess.engId);
+          if (eng) {
+            currentEngineer = eng;
+            currentRole = 'engineer';
+            showEngineerScreen();
+            showToast('Session restored — welcome back ' + eng.name);
+            return;
+          }
+          showScreen('splash');
+        }, 1200);
+        return; // Don't show splash yet
+      } else if (sess.role === 'manager') {
+        setTimeout(async () => {
+          await loadSettingsFromFirebase();
+          currentRole = 'manager';
+          showManagerScreen();
+          showToast('Session restored — Manager');
+        }, 1200);
+        return;
+      }
+    }
+  } catch(e) {}
   showScreen('splash');
 });
 
@@ -1101,6 +1196,8 @@ function showScreen(name){
   document.getElementById('screen-'+name).classList.add('active');
 }
 function showEngineerScreen(){
+  // Save session so refresh can restore it
+  try { sessionStorage.setItem('dpr_session', JSON.stringify({role:'engineer', engId: currentEngineer?.id, engName: currentEngineer?.name, engPin: currentEngineer?.pin})); } catch(e){}
   // Init submit panel dates whenever engineer screen loads
   // Also refresh settings from Firebase so auth is always current
   loadSettingsFromFirebase().then(()=>{
@@ -1116,8 +1213,9 @@ function showEngineerScreen(){
     if(chip) chip.title=canBackDate()?'Tap to change DPR date':'DPR date (back-date not authorized)';
     // Re-check lock with correct time from Firebase
     checkLock();
-  }); document.getElementById('eng-name-badge').textContent=currentEngineer.name; showScreen('engineer'); buildStationCards(); buildPhotoGrid(); buildProgressStatus(document.getElementById('progress-container')); buildLabourTab('labour-container'); buildEquipmentTab('equipment-container'); subscribeToMyEntries(); }
+  }); document.getElementById('eng-name-badge').textContent=currentEngineer.name; showScreen('engineer'); buildStationCards(); buildPhotoGrid(); buildEngIssueStationSelect(); setIssuePriority('High'); buildProgressStatus(document.getElementById('progress-container')); buildLabourTab('labour-container'); buildEquipmentTab('equipment-container'); subscribeToMyEntries(); }
 function showManagerScreen(){
+  try { sessionStorage.setItem('dpr_session', JSON.stringify({role:'manager'})); } catch(e){}
   mgrViewDate = DPR_DATE;
   showScreen('manager');
   buildStationStatusGrid(); loadKeyIssues();
@@ -1936,7 +2034,7 @@ function exportMyCSV(){ const entries=Object.values(localEntries);if(entries.len
 function exportAllCSV(){ const entries=Object.values(allEntries);if(entries.length===0){showToast('No entries','error');return;} let csv='DPR Date,Reporting Date,Engineer,Station,WBS Group,BOQ No,Activity,UOM,Qty Today,BOQ Rate,DPR Amount,Remarks\n'; entries.forEach(e=>{const r=(e.remarks||'').replace(/"/g,"''");csv+=`${DPR_DATE},${TODAY},"${e.engineer_name||''}","${e.stationName}","${e.groupName}","${e.boq}","${e.actDesc}","${e.uom}",${e.qty},${e.rate||0},${Math.round(e.amt||0)},"${r}"\n`;}); downloadCSV(csv,'DPR_ALL_'+DPR_DATE+'.csv'); }
 
 // ===== TAB SWITCHING =====
-function engTab(name){ const panels=['entries','photos','progress','labour','equipment','summary']; const btns=document.querySelectorAll('#eng-tab-nav .tab-btn'); panels.forEach((p,i)=>{document.getElementById('engp-'+p).classList.toggle('active',p===name);btns[i]?.classList.toggle('active',p===name);}); if(name==='summary')renderEngSummary(); if(name==='progress')buildProgressStatus(document.getElementById('progress-container')); }
+function engTab(name){ const panels=['entries','issues','photos','progress','labour','equipment','summary']; const btns=document.querySelectorAll('#eng-tab-nav .tab-btn'); panels.forEach((p,i)=>{document.getElementById('engp-'+p).classList.toggle('active',p===name);btns[i]?.classList.toggle('active',p===name);}); if(name==='summary')renderEngSummary(); if(name==='progress')buildProgressStatus(document.getElementById('progress-container')); if(name==='issues'){buildEngIssueStationSelect();loadEngMyIssues();} }
 function mgrTab(name){ const panels=['issues','dashboard','progress','reportcard','entries','labour','equipment','photos']; const btns=document.querySelectorAll('#screen-manager .tab-nav .tab-btn'); panels.forEach((p,i)=>{document.getElementById('mgrp-'+p)?.classList.toggle('active',p===name);btns[i]?.classList.toggle('active',p===name);}); if(name==='labour'){buildMgrLabourView();} if(name==='equipment'){buildMgrEquipmentView();} if(name==='issues'){loadKeyIssues();} if(name==='photos'){loadMgrPhotos();} }
 
 // ===== HELPERS =====
@@ -2197,21 +2295,7 @@ async function saveEntryWithIssue(){
   // Call original save (which saves to Firebase)
   if(_origSaveEntry) _origSaveEntry();
   
-  // If priority and remarks, also save as key issue
-  if(priority && remarks && currentModal){
-    const {stKey, stName, gName, boq, act} = currentModal;
-    await saveKeyIssue({
-      source: 'DPR Entry',
-      desc: (act?.desc||'') + ': ' + remarks,
-      priority,
-      date: DPR_DATE,
-      engineer: currentEngineer?.name||'',
-      engineerId: currentEngineer?.id||'',
-      station: stName||stKey,
-      boq
-    }).catch(()=>{});
-    loadEngIssues(null);
-  }
+  // Issues are now raised separately via the Issues tab — not auto-created from DPR entry
 }
 
 // Override saveEntry globally after DOM loads
@@ -2525,43 +2609,8 @@ async function loadMgrPhotos(){
 // BACK-DATE DPR SYSTEM
 // ============================================================
 
-async function toggleDprDatePicker() {
-  const picker = document.getElementById('dpr-date-picker');
-  if (!picker) return;
-  if (picker.style.display === 'none' || !picker.style.display) {
-    // Always fetch fresh settings from Firebase before checking
-    await loadSettingsFromFirebase();
-    // Check if engineer has back-date authorization
-    if (!canBackDate()) {
-      showToast('Back-date DPR not authorized. Contact Admin.', 'error');
-      return;
-    }
-    // Set max = yesterday, min = today - maxDays
-    const maxDays = parseInt(_firebaseSettings.backdate_max_days || '7');
-    const today = new Date();
-    const minDate = new Date(today);
-    minDate.setDate(today.getDate() - maxDays);
-    picker.max = TODAY; // can select today or any past date within limit
-    picker.min = getDateStr(minDate);
-    picker.value = DPR_DATE;
-    picker.style.display = 'block';
-    picker.focus();
-    // Close on outside click
-    setTimeout(() => {
-      document.addEventListener('click', closeDprPicker, { once: true, capture: true });
-    }, 100);
-  } else {
-    picker.style.display = 'none';
-  }
-}
 
-function closeDprPicker(e) {
-  const picker = document.getElementById('dpr-date-picker');
-  const chip = document.getElementById('dpr-date-chip');
-  if (picker && !chip.contains(e.target)) {
-    picker.style.display = 'none';
-  }
-}
+
 
 function changeDprDate(newDate) {
   if (!newDate) return;
@@ -2697,7 +2746,7 @@ let _firebaseSettings = {
 async function loadSettingsFromFirebase() {
   try {
     // 1. Load settings doc
-    const settingsDoc = await db.collection('app_settings').doc('config').get();
+    const settingsDoc = await db.collection('settings').doc('app_config').get();
     if (settingsDoc.exists) {
       const d = settingsDoc.data();
       if (d.admin_pass)         { ADMIN_PASSPHRASE_LIVE = d.admin_pass; }
@@ -2712,7 +2761,7 @@ async function loadSettingsFromFirebase() {
     }
 
     // 2. Load engineers from Firebase
-    const engsDoc = await db.collection('app_settings').doc('engineers').get();
+    const engsDoc = await db.collection('settings').doc('app_engineers').get();
     if (engsDoc.exists) {
       const d = engsDoc.data();
       if (d.list && Array.isArray(d.list) && d.list.length > 0) {
@@ -2759,7 +2808,7 @@ async function loadSettingsFromFirebase() {
 // ── Save engineer list to Firebase ────────────────────────────────────────
 async function saveEngineerListToFirebase() {
   try {
-    await db.collection('app_settings').doc('engineers').set({
+    await db.collection('settings').doc('app_engineers').set({
       list: adminEngineers,
       updated_at: new Date().toISOString()
     });
@@ -2780,7 +2829,7 @@ async function saveSettingsToFirebase(partial) {
   if (ADMIN_PASSPHRASE_LIVE !== ADMIN_PASSPHRASE) payload.admin_pass = ADMIN_PASSPHRASE_LIVE;
   if (MANAGER_PIN_LIVE) payload.mgr_pin = MANAGER_PIN_LIVE;
   try {
-    await db.collection('app_settings').doc('config').set(payload, { merge: true });
+    await db.collection('settings').doc('app_config').set(payload, { merge: true });
   } catch(e) { showToast('Sync error: settings not saved to cloud','error'); }
 }
 
@@ -2802,7 +2851,264 @@ function refreshEngDropdown() {
   });
 }
 // ============================================================
+
+// ============================================================
+// CUSTOM CALENDAR DATE PICKER (mobile-friendly)
+// ============================================================
+let _calYear = 0, _calMonth = 0, _calMaxDate = '', _calMinDate = '';
+
+async function toggleDprDatePicker() {
+  // Always fetch fresh settings before checking auth
+  await loadSettingsFromFirebase();
+  if (!canBackDate()) {
+    showToast('Back-date DPR not authorized. Contact Admin.', 'error');
+    return;
+  }
+  // Calculate allowed date range
+  const maxDays = parseInt(_firebaseSettings.backdate_max_days || '7');
+  const today = new Date();
+  const minD = new Date(today); minD.setDate(today.getDate() - maxDays);
+  _calMaxDate = getDateStr(today);
+  _calMinDate = getDateStr(minD);
+  // Start calendar at current DPR_DATE month
+  const [y, m] = DPR_DATE.split('-').map(Number);
+  _calYear = y; _calMonth = m - 1;
+  renderCalendar();
+  document.getElementById('cal-overlay').style.display = 'block';
+  document.getElementById('cal-modal').style.display = 'block';
+}
+
+function closeDprCalendar() {
+  document.getElementById('cal-overlay').style.display = 'none';
+  document.getElementById('cal-modal').style.display = 'none';
+}
+
+function calPrevMonth() {
+  _calMonth--;
+  if (_calMonth < 0) { _calMonth = 11; _calYear--; }
+  renderCalendar();
+}
+
+function calNextMonth() {
+  _calMonth++;
+  if (_calMonth > 11) { _calMonth = 0; _calYear++; }
+  renderCalendar();
+}
+
+function renderCalendar() {
+  const MONTHS = ['January','February','March','April','May','June',
+                  'July','August','September','October','November','December'];
+  document.getElementById('cal-month-label').textContent =
+    MONTHS[_calMonth] + ' ' + _calYear;
+
+  const daysEl = document.getElementById('cal-days');
+  daysEl.innerHTML = '';
+
+  const firstDay = new Date(_calYear, _calMonth, 1).getDay();
+  const daysInMonth = new Date(_calYear, _calMonth + 1, 0).getDate();
+
+  // Empty cells before first day
+  for (let i = 0; i < firstDay; i++) {
+    const empty = document.createElement('div');
+    daysEl.appendChild(empty);
+  }
+
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dateStr = _calYear + '-' +
+      String(_calMonth + 1).padStart(2,'0') + '-' +
+      String(d).padStart(2,'0');
+    const btn = document.createElement('button');
+    btn.textContent = d;
+    btn.style.width='100%'; btn.style.borderRadius='50%'; btn.style.border='none';
+    btn.style.fontFamily="Rajdhani,sans-serif"; btn.style.fontWeight='700';
+    btn.style.fontSize='14px'; btn.style.cursor='pointer'; btn.style.aspectRatio='1';
+    btn.style.transition='all .15s';
+
+    const isSelected = dateStr === DPR_DATE;
+    const isToday    = dateStr === TODAY;
+    const isFuture   = dateStr > _calMaxDate;
+    const isTooOld   = dateStr < _calMinDate;
+    const isDisabled = isFuture || isTooOld;
+
+    if (isSelected) {
+      btn.style.background = 'var(--accent,#F59E0B)';
+      btn.style.color = '#000';
+    } else if (isToday) {
+      btn.style.background = 'rgba(59,130,246,.2)';
+      btn.style.color = 'var(--accent2,#3B82F6)';
+      btn.style.border = '1.5px solid var(--accent2,#3B82F6)';
+    } else if (isDisabled) {
+      btn.style.background = 'transparent';
+      btn.style.color = 'rgba(100,116,139,.35)';
+      btn.style.cursor = 'not-allowed';
+    } else {
+      btn.style.background = 'var(--surface2,#1A2235)';
+      btn.style.color = 'var(--white,#F8FAFC)';
+    }
+
+    if (!isDisabled) {
+      btn.onclick = () => { closeDprCalendar(); changeDprDate(dateStr); };
+    }
+    daysEl.appendChild(btn);
+  }
+}
+// ============================================================
+
+// ============================================================
+// ENGINEER ISSUES TAB
+// ============================================================
+let _engIssuePriority = 'High'; // default
+
+function setIssuePriority(level) {
+  _engIssuePriority = level;
+  const map = {
+    High:   { id:'iprio-high', bg:'rgba(239,68,68,.25)',   border:'rgba(239,68,68,.8)',   color:'var(--danger)' },
+    Medium: { id:'iprio-med',  bg:'rgba(245,158,11,.2)',   border:'rgba(245,158,11,.7)',  color:'var(--accent)' },
+    Low:    { id:'iprio-low',  bg:'rgba(16,185,129,.2)',   border:'rgba(16,185,129,.6)',  color:'var(--accent3)'},
+  };
+  ['High','Medium','Low'].forEach(l => {
+    const btn = document.getElementById('iprio-' + (l==='Medium'?'med':l.toLowerCase()));
+    if (!btn) return;
+    const active = l === level;
+    btn.style.background = active ? map[l].bg : (l==='High'?'rgba(239,68,68,.1)':l==='Medium'?'rgba(245,158,11,.06)':'rgba(16,185,129,.06)');
+    btn.style.borderColor = active ? map[l].border : (l==='High'?'rgba(239,68,68,.4)':l==='Medium'?'rgba(245,158,11,.3)':'rgba(16,185,129,.25)');
+    btn.style.fontWeight = active ? '900' : '700';
+    btn.style.transform = active ? 'scale(1.04)' : 'scale(1)';
+  });
+}
+
+function buildEngIssueStationSelect() {
+  const sel = document.getElementById('issue-station');
+  if (!sel || !currentEngineer) return;
+  sel.innerHTML = '<option value="">-- Select Station --</option>';
+  const stations = currentEngineer.stations || [];
+  stations.forEach(stKey => {
+    const st = WBS_DATA[stKey];
+    if (!st) return;
+    const opt = document.createElement('option');
+    opt.value = stKey;
+    opt.textContent = st.name;
+    sel.appendChild(opt);
+  });
+}
+
+async function submitEngIssue() {
+  const stKey  = document.getElementById('issue-station')?.value || '';
+  const desc   = document.getElementById('issue-desc')?.value?.trim() || '';
+  const depts  = Array.from(document.querySelectorAll('input[name="issue-dept-cb"]:checked')).map(cb=>cb.value);
+
+  if (!stKey)   { showToast('Please select a station / location', 'error'); return; }
+  if (!desc)    { showToast('Please describe the issue', 'error'); return; }
+  if (!depts.length) { showToast('Please select at least one responsible department', 'error'); return; }
+
+  const stName = WBS_DATA[stKey]?.name || stKey;
+  const issueId = 'issue_' + Date.now() + '_' + Math.random().toString(36).slice(2,6);
+
+  const issue = {
+    id:          issueId,
+    source:      'Engineer Issues Tab',
+    desc,
+    priority:    _engIssuePriority,
+    dept:        depts.join(', '),        // all selected departments
+    depts:       depts,                   // array for filtering
+    date:        DPR_DATE,
+    engineer:    currentEngineer?.name || '',
+    engineerId:  currentEngineer?.id   || '',
+    station:     stName,
+    stationKey:  stKey,
+    resolved:    false,
+    createdAt:   new Date().toISOString(),
+    updatedAt:   new Date().toISOString(),
+  };
+
+  try {
+    await db.collection('key_issues').doc(issueId).set(issue);
+    showToast('Issue raised ✓ — visible to Manager now');
+    // Reset form
+    document.getElementById('issue-desc').value = '';
+    document.getElementById('issue-station').value = '';
+    document.querySelectorAll('input[name="issue-dept-cb"]').forEach(cb => cb.checked = false);
+    setIssuePriority('High');
+    // Reload my issues list
+    loadEngMyIssues();
+  } catch(e) {
+    showToast('Error saving issue — check connection', 'error');
+  }
+}
+
+async function loadEngMyIssues() {
+  const listEl = document.getElementById('eng-my-issues-list');
+  if (!listEl || !currentEngineer) return;
+  listEl.innerHTML = '<div style="font-size:11px;color:var(--muted);">Loading...</div>';
+
+  try {
+    const snap = await db.collection('key_issues')
+      .where('engineerId', '==', currentEngineer.id)
+      .where('resolved', '==', false)
+      .orderBy('createdAt', 'desc')
+      .limit(20)
+      .get();
+
+    if (snap.empty) {
+      listEl.innerHTML = '<div style="font-size:12px;color:var(--muted);padding:8px 0;">No active issues. All clear ✓</div>';
+      return;
+    }
+
+    listEl.innerHTML = '';
+    snap.forEach(doc => {
+      const d = doc.data();
+      const days = issueAgeDays(d);
+      const pColor = d.priority==='High'?'var(--danger)':d.priority==='Medium'?'var(--accent)':'var(--accent3)';
+      const pBg   = d.priority==='High'?'rgba(239,68,68,.08)':d.priority==='Medium'?'rgba(245,158,11,.06)':'rgba(16,185,129,.06)';
+      const dot   = d.priority==='High'?'🔴':d.priority==='Medium'?'🟡':'🟢';
+
+      const card = document.createElement('div');
+      card.style.cssText = `background:${pBg};border:1px solid ${pColor}40;border-radius:8px;padding:10px 12px;margin-bottom:8px;`;
+      card.innerHTML = `
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">
+          <div style="flex:1;">
+            <div style="font-family:'Rajdhani',sans-serif;font-weight:700;font-size:13px;color:var(--white);">${dot} ${d.desc||''}</div>
+            <div style="font-size:10px;color:var(--muted);margin-top:3px;display:flex;flex-wrap:wrap;gap:5px;">
+              <span style="background:rgba(59,130,246,.15);border:1px solid rgba(59,130,246,.25);color:var(--accent2);border-radius:4px;padding:1px 6px;">${d.station||''}</span>
+              ${(d.depts||[d.dept]).filter(Boolean).map(dep=>
+                `<span style="background:rgba(124,58,237,.12);border:1px solid rgba(124,58,237,.25);color:#a78bfa;border-radius:4px;padding:1px 6px;">${dep}</span>`
+              ).join('')}
+              <span style="background:rgba(100,116,139,.15);border-radius:4px;padding:1px 5px;">${days} day${days!==1?'s':''} old</span>
+            </div>
+          </div>
+          ${canResolveIssues() ? `<button onclick="resolveIssue('${doc.id}')" style="background:rgba(16,185,129,.15);border:1px solid rgba(16,185,129,.4);color:var(--accent3);border-radius:5px;padding:4px 10px;font-size:10px;font-weight:700;cursor:pointer;white-space:nowrap;">✓ Resolve</button>` : ''}
+        </div>`;
+      listEl.appendChild(card);
+    });
+  } catch(e) {
+    listEl.innerHTML = '<div style="font-size:11px;color:var(--muted);">Could not load issues.</div>';
+  }
+}
+// ============================================================
 </script>
+
+<!-- ═══ DATE PICKER CALENDAR MODAL ═══ -->
+<div id="cal-overlay" onclick="closeDprCalendar()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9998;"></div>
+<div id="cal-modal" style="display:none;position:fixed;bottom:0;left:0;right:0;z-index:9999;background:var(--navy,#111827);border-radius:18px 18px 0 0;padding:20px 16px 30px;box-shadow:0 -8px 32px rgba(0,0,0,.5);">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+    <button onclick="calPrevMonth()" style="background:var(--surface2,#1A2235);border:none;color:var(--white,#F8FAFC);border-radius:8px;padding:8px 14px;font-size:18px;cursor:pointer;">&#8249;</button>
+    <div id="cal-month-label" style="font-family:'Rajdhani',sans-serif;font-weight:800;font-size:16px;color:var(--accent,#F59E0B);letter-spacing:.5px;"></div>
+    <button onclick="calNextMonth()" style="background:var(--surface2,#1A2235);border:none;color:var(--white,#F8FAFC);border-radius:8px;padding:8px 14px;font-size:18px;cursor:pointer;">&#8250;</button>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin-bottom:8px;">
+    <div style="text-align:center;font-size:10px;color:var(--muted,#64748B);padding:4px 0;font-weight:700;">S</div>
+    <div style="text-align:center;font-size:10px;color:var(--muted,#64748B);padding:4px 0;font-weight:700;">M</div>
+    <div style="text-align:center;font-size:10px;color:var(--muted,#64748B);padding:4px 0;font-weight:700;">T</div>
+    <div style="text-align:center;font-size:10px;color:var(--muted,#64748B);padding:4px 0;font-weight:700;">W</div>
+    <div style="text-align:center;font-size:10px;color:var(--muted,#64748B);padding:4px 0;font-weight:700;">T</div>
+    <div style="text-align:center;font-size:10px;color:var(--muted,#64748B);padding:4px 0;font-weight:700;">F</div>
+    <div style="text-align:center;font-size:10px;color:var(--muted,#64748B);padding:4px 0;font-weight:700;">S</div>
+  </div>
+  <div id="cal-days" style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;"></div>
+  <div style="margin-top:14px;display:flex;gap:8px;">
+    <button onclick="closeDprCalendar()" style="flex:1;background:var(--surface2,#1A2235);border:1px solid var(--border,#1E2D47);color:var(--muted,#64748B);border-radius:10px;padding:12px;font-family:'Rajdhani',sans-serif;font-weight:700;font-size:14px;cursor:pointer;">Cancel</button>
+  </div>
+</div>
 </body>
 </html>  <div class="tab-panel" id="mgrp-photos">
     <div class="container" style="padding-bottom:80px;">
